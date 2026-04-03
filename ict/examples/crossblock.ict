@@ -1,0 +1,14 @@
+///
+/// Vregs defined in one block, used in another.
+///
+
+func_impl @crossblock
+{
+    %foo    Const 32;
+            Br %other;
+%other:
+            Br %end;
+%end:
+            DebugPrint %foo;
+            Ret;
+}

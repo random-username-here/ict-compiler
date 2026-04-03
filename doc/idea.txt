@@ -1,0 +1,39 @@
+
+What needed
+
+
+forlan
+	standard math operators
+	numbers
+	strings
+	custom-resolvable functions and constants
+	user types: pointer/small value
+	functions
+	
+	func(args) {}
+	
+
+ict-asm
+	lisp constants?
+	
+	main:
+		...
+	.const main_length (- (here) main)
+	.const flags (or F_FOO F_BAR)
+	 
+
+ivm-asm2
+
+	cpuid-style inst
+
+ict-opt-rules
+
+	replace(
+		add(@x, imm(0)),
+		@x
+	)
+	
+	(replace!
+		(add @x (imm 0))
+		@x
+	)

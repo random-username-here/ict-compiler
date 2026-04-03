@@ -1,0 +1,13 @@
+///
+/// Allocating a place on stack, storing and printing from it.
+///
+
+func_impl @demo
+{
+    %addr   Alloca;
+    %val    Const 42;
+            Store %addr %val;
+    %read   Load %addr;
+            DebugPrint %read;
+            Ret;
+}

@@ -1,0 +1,12 @@
+///
+/// Print 1 + 2
+///
+
+func_impl @main
+{
+    %one Const 1;
+    %two Const 2;
+    %sum Add %one %two;
+    DebugPrint %sum;
+    Ret;
+}

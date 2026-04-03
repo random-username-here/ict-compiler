@@ -1,0 +1,25 @@
+///
+/// A simple loop from 0 to 9 using Alloca.
+/// Phi-s are a long way off, so this is the only way now.
+///
+
+func_impl @loop
+{
+    %i      Alloca;
+    %init   Const 0;
+    %limit  Const 10;
+            Store %i %init;
+            Br %loop;
+%loop:
+    %val    Load %i;
+    %less   Lt %val %limit;
+            Bc %less %loop.body %loop.end;
+%loop.body:
+            DebugPrint %i;
+    %one    Const 1;
+    %next   Add %val %one;
+            Store %i %next;
+            Br %loop;
+%loop.end:
+            Ret;
+}
