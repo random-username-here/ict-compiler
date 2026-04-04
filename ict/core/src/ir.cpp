@@ -90,9 +90,8 @@ void Op::dump(std::ostream &os) const {
 }
 
 void Op::replaceRefsWith(Op *op) {
-    for (auto &i : refs()) {
-        i->replaceWith(VRegArg::create(op));
-    }
+    for (size_t i = refs().size() - 1; i != (size_t) -1; --i)
+        refs()[i]->replaceWith(VRegArg::create(op));
 }
 
 UPtr<Op> Op::extractSelf() {

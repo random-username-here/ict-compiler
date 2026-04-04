@@ -59,9 +59,9 @@ int main(int argc, const char *argv[]) {
         return 0;
     }
 
-    mgr.runAllPasses();
+    misc::info(TAG) << "Parsed:\n" << misc::beginBlock << *mgr.module() << misc::endBlock;
 
-    misc::info(TAG) << "Resulting IR is:\n" << misc::beginBlock << *mgr.module() << misc::endBlock;
+    mgr.runAllPasses();
 
     misc::DumpStringStream ds;
     ds.enableColor();
@@ -71,6 +71,9 @@ int main(int argc, const char *argv[]) {
         auto msg = misc::info(TAG);
         msg << "Assembled into:\n" << misc::beginBlock << ds.str() << misc::endBlock;
     }
+
+    misc::DumpFileStream fs("program.s");
+    mgr.emit(fs);
 
     misc::info(TAG) << "Done";
     return 0;

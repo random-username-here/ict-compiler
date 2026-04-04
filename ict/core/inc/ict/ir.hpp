@@ -202,6 +202,11 @@ public:
     /** Extract operator from container */
     UPtr<Op> extractSelf();
 
+    void replaceWith(UPtr<Op> &&op) {
+        replaceRefsWith(op.get());
+        Item::replaceWith(std::move(op));
+    }
+
     MISC_CREATEFUNC(Op);
 };
 

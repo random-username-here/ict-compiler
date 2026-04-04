@@ -3,7 +3,7 @@
 /// Phi-s are a long way off, so this is the only way now.
 ///
 
-func_impl @loop
+func_impl @main
 {
     %i      Alloca;
     %init   Const 0;
@@ -15,7 +15,7 @@ func_impl @loop
     %less   Lt %val %limit;
             Bc %less %loop.body %loop.end;
 %loop.body:
-            DebugPrint %i;
+            DebugPrint %val;
     %one    Const 1;
     %next   Add %val %one;
             Store %i %next;

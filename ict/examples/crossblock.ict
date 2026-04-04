@@ -2,7 +2,7 @@
 /// Vregs defined in one block, used in another.
 ///
 
-func_impl @crossblock
+func_impl @main
 {
     %foo    Const 32;
             Br %other;

@@ -2,7 +2,7 @@
 /// Allocating a place on stack, storing and printing from it.
 ///
 
-func_impl @demo
+func_impl @main
 {
     %addr   Alloca;
     %val    Const 42;

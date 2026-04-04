@@ -20,21 +20,33 @@ class HL2LL : public Pass
 
     OpKind m_getOneToOneMapping(OpKind kind) const
     {
-#define X(id, from, name, textname, instr) if (kind == from) return name;
+#define X(id, inv, from, name, textname, instr) if (kind == from) return name;
         ICT_IVM_FOR_ALL_OPS(X)
 #undef X
         return 0;
     }
 
+    bool m_hasInvertedOperandOrder(OpKind kind) const
+    {
+#define X(id, inv, from, name, textname, instr) if (kind == from) return inv;
+        ICT_IVM_FOR_ALL_OPS(X)
+#undef X
+        return false;
+    }
+
     /** Operator is 1-to-1 mapped from high-level IR */
     void m_replaceWithOneToOneMapping(Op *op, OpKind kind) const
     {
-        // FIXME: reverse operand order for some ops (Lt, etc)
         auto inserter = BlockBuilder::before(op);
-        for (auto &arg : op->children()) {
-            if (auto iarg = dynamic_cast<ConstArg*>(arg.get()))
+        bool inverse = m_hasInvertedOperandOrder(op->kind());
+        for (size_t i = (inverse ? op->size()-1 : 0);
+             inverse ? (i != (size_t) -1) : (i < op->size());
+             inverse ? --i : ++i
+        ) {
+            auto arg = op->child(i).ptr();
+            if (auto iarg = dynamic_cast<ConstArg*>(arg))
                 inserter.create(IVM_R_PUSH, iarg->value());
-            else if (auto varg = dynamic_cast<VRegArg*>(arg.get()))
+            else if (auto varg = dynamic_cast<VRegArg*>(arg))
                 inserter.create(IVM_TOSTACK, varg->ptr());
             else {
                 misc::error(TAG) << "Cannot comprehend arg " << *arg << " for one-to-one mapping";
@@ -46,6 +58,25 @@ class HL2LL : public Pass
             auto load = inserter.create(IVM_FROMSTACK);
             op->replaceRefsWith(load);
         }
+        op->extractSelf();
+    }
+
+    void m_convertDebugPrint(Op *op) const
+    {
+        auto ins = BlockBuilder::before(op);
+        for (auto &arg : op->children()) {
+            if (auto iarg = dynamic_cast<ConstArg*>(arg.get()))
+                ins.create(IVM_R_PUSH, iarg->value());
+            else if (auto varg = dynamic_cast<VRegArg*>(arg.get()))
+                ins.create(IVM_TOSTACK, varg->ptr());
+            else {
+                misc::error(TAG) << "DebugPrint has unexpected arg " << *arg;
+                abort();
+            }
+            ins.create(IVM_DEBUG_PRINT_INT);
+        }
+        ins.create(IVM_R_PUSH, (Integer) '\n');
+        ins.create(IVM_DEBUG_PRINT_CHAR);
         op->extractSelf();
     }
 
@@ -68,10 +99,10 @@ class HL2LL : public Pass
             }
             case RET:
                 // TODO: returning something
-                op->replaceWith(Op::create(IVM_R_RET));
-                return;
-            case DEBUG_PRINT:
-                // TODO: generate calls
+                inserter.create(IVM_R_SFEND);
+                inserter.create(IVM_R_SPOP);
+                inserter.create(IVM_R_RET);
+                op->extractSelf();
                 return;
             case BR:
                 inserter.create(IVM_R_RJMP, op->barg(0)->ptr());
@@ -83,8 +114,18 @@ class HL2LL : public Pass
                 inserter.create(IVM_R_RJMP, op->barg(2)->ptr());
                 op->extractSelf();
                 return;
-            case ALLOCA:
-                // This one is left untouched until stack slot allocator
+            case ALLOCA: {
+                inserter.create(IVM_R_SPUSH, 0);
+                inserter.create(IVM_R_GSP);
+                auto res = inserter.create(IVM_FROMSTACK);
+                for (auto i : op->refs())
+                    misc::verb(TAG) << i << " " << i->parent();
+                op->replaceRefsWith(res);
+                op->extractSelf();
+                return;
+            }
+            case DEBUG_PRINT:
+                m_convertDebugPrint(op);
                 return;
             default:
                 misc::error(TAG) << "Cannot convert op " << ACCENT << op->kind().name() << RST;
@@ -106,8 +147,11 @@ class HL2LL : public Pass
                 for (size_t i = block->size()-1; i != (size_t) -1; --i)
                     m_convert(block->child(i).ptr());
             }
+            auto ins = BlockBuilder(func->child(0), 0);
+            ins.create(IVM_R_SPUSH);
+            ins.create(IVM_R_SFBEGIN);
         }
-        misc::info(TAG) << "Resulting IR:\n" << misc::beginBlock << *mgr->module() << misc::endBlock;
+        misc::verb(TAG) << "Resulting IR:\n" << misc::beginBlock << *mgr->module() << misc::endBlock;
 
     }
 };
