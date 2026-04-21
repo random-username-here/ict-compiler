@@ -1,0 +1,22 @@
+///
+/// Give function a pointer to change
+///
+
+func_decl @change (%x ptr) void;
+func_decl @main () void;
+
+func_impl @change {
+    %x.p        ArgPtr %x;
+    %x.v        Load[ptr] %x.p;
+    %val        Const 42;
+                Store[i64] %x.v %val;
+                Ret;
+}
+
+func_impl @main {
+    %var        Alloca[i64];
+                Call @change %var;
+    %put        Load[i64] %var;
+                DebugPrint %put;
+                Ret;
+}

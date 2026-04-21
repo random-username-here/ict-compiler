@@ -56,7 +56,7 @@ int main(int argc, const char *argv[]) {
    
     if (!mgr.module()) {
         misc::error(TAG) << "Frontend failed, bailing out!";
-        return 0;
+        return 1;
     }
 
     misc::info(TAG) << "Parsed:\n" << misc::beginBlock << *mgr.module() << misc::endBlock;

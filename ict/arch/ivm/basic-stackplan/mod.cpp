@@ -22,49 +22,56 @@ class StackPlanner : public Pass
     std::string_view id() const override { return "ict.ivm.basic-stackplan"; }
     std::string_view brief() const override { return "ICT IVM pass allocate stack slots -- version which gives a new slot for each variable"; }
 
-    void m_forEachOpOfType(Function *func, OpKind kind, const std::function<void(Op*)> &fn) const
+    void m_forEachOpOfType(FunctionImpl *func, int kind, const std::function<void(Operation*)> &fn) const
     {
-        for (auto &block : func->children())
-            for (auto &op : block->children())
+        for (auto block : func->blocks()) {
+            for (auto op = block->operations().first(); op != nullptr;) {
+                auto next = op->next();
                 if (op->kind() == kind)
-                    fn(op.get());
+                    fn(op);
+                op = next;
+            }
+        }
     }
 
-    void m_function(Function *func) const
+    void m_function(FunctionImpl *func) const
     {
-        misc::verb(TAG) << "Layouting function " << BOLD << "@" << func->name() << RST;
+        misc::verb(TAG) << "Layouting function " << BOLD << "@" << func->decl()->name() << RST;
 
-        std::unordered_map<Op*, Integer> off;
+        std::unordered_map<Operation*, Integer> off;
         Integer curPos = 0;
         
-        m_forEachOpOfType(func, IVM_FROMSTACK, [&off, &curPos](Op *op){
+        m_forEachOpOfType(func, IVM_FROMSTACK, [&off, &curPos](Operation *op){
             curPos -= 8;
             off[op] = curPos;
-            misc::verb(TAG) << "    Var " << ACCENT << "%" << op->parent()->slotInParent()
-                << "." << op->slotInParent() << RST << " @ " << op << " -> slot " << ACCENT << curPos << RST;
+            misc::verb(TAG) << "    Var " << ACCENT << "%" << op << RST << " @ " << op << " -> slot " << ACCENT << curPos << RST;
         });
 
-        m_forEachOpOfType(func, IVM_TOSTACK, [&off](Op *op){
-            auto to = op->varg(0)->ptr();
+        m_forEachOpOfType(func, IVM_TOSTACK, [&off](Operation *op){
+            auto to = op->arg_v(0)->ptr();
             assert(off.count(to) != 0);
-            op->replaceWith(Op::create(IVM_R_SFLOAD64, off.at(to)));
+            op->parentList()->createBefore(op, IVM_R_SFLOAD64, nullptr, off.at(to));
+            op->extractSelf();
         });
 
-        m_forEachOpOfType(func, IVM_FROMSTACK, [&off, &curPos](Op *op){
-            op->replaceWith(Op::create(IVM_R_SFSTORE64, off.at(op)));
+        m_forEachOpOfType(func, IVM_FROMSTACK, [&off, &curPos](Operation *op){
+            op->parentList()->createBefore(op, IVM_R_SFSTORE64, nullptr, off.at(op));
+            op->extractSelf();
         });
 
         misc::verb(TAG) << "    Using " << ACCENT << -curPos << RST << " bytes for stack slots";
 
-        auto block = func->child(0).ptr();
-        size_t pos = 0;
-        while (pos < block->size() && block->child(pos)->kind() != IVM_R_SFBEGIN)
-            ++pos;
-        if (pos == block->size()) {
-            misc::error(TAG) << "Cannot find stack frame creation in " << ACCENT << "@" << func->name() << RST;
+        auto block = func->blocks().first();
+        Operation *sfbegin = nullptr;
+        for (auto op = block->operations().first(); op != nullptr && sfbegin == nullptr; op = op->next()) {
+            if (op->kind() == IVM_R_SFBEGIN)
+                sfbegin = op;
+        }
+        if (!sfbegin) {
+            misc::error(TAG) << "Cannot find stack frame creation in " << ACCENT << "@" << func->decl()->name() << RST;
             abort();
         }
-        block->insert(pos+1, Op::create(IVM_R_SADD, curPos));
+        block->operations().createAfter(sfbegin, IVM_R_SADD, nullptr, curPos);
     }
 
     void run(Manager *mgr) const override
@@ -75,8 +82,8 @@ class StackPlanner : public Pass
         }
 
         misc::info(TAG) << "Work is being done";
-        for (auto &func : mgr->module()->children())
-            m_function(func.get());
+        for (auto func : mgr->module()->funcImpls())
+            m_function(func);
 
         misc::verb(TAG) << "Resulting IR:\n" << misc::beginBlock << *mgr->module() << misc::endBlock;
     }

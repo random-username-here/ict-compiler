@@ -3,23 +3,25 @@
 /// Phi-s are a long way off, so this is the only way now.
 ///
 
-func_impl @main
-{
-    %i      Alloca;
-    %init   Const 0;
-    %limit  Const 10;
-            Store %i %init;
-            Br %loop;
+func_decl @main () void;
+
+func_impl @main {
+%start:
+    %i          Alloca[i64];
+    %init       Const 0;
+    %limit      Const 10;
+                Store[i64] %i %init;
+                Br %loop;
 %loop:
-    %val    Load %i;
-    %less   Lt %val %limit;
-            Bc %less %loop.body %loop.end;
+    %val        Load[i64] %i;
+    %less       Lt %val %limit;
+                Bc %less %loop.body %loop.end;
 %loop.body:
-            DebugPrint %val;
-    %one    Const 1;
-    %next   Add %val %one;
-            Store %i %next;
-            Br %loop;
+                DebugPrint %val;
+    %one        Const 1;
+    %next       Add %val %one;
+                Store[i64] %i %next;
+                Br %loop;
 %loop.end:
-            Ret;
+                Ret;
 }

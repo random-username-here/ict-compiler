@@ -2,14 +2,16 @@
 /// Linear basic blocks
 ///
 
-func_impl @main
-{
-    DebugPrint 0;
-    Br %first;
+func_decl @main () void;
+
+func_impl @main {
+%start:
+                DebugPrint 0;
+                Br %first;
 %first:
-    DebugPrint 1;
-    Br %second;
+                DebugPrint 1;
+                Br %second;
 %second:
-    DebugPrint 2;
-    Ret;
+                DebugPrint 2;
+                Ret;
 }

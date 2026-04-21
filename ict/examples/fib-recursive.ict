@@ -1,0 +1,35 @@
+///
+/// Recursive fibonacci sequence
+///
+
+func_decl @fib(%n i64) i64;
+func_decl @main() void;
+
+func_impl @fib {
+    %n.ptr ArgPtr %n;
+    %n.val Load[i64] %n.ptr;
+    //DebugPrint %n.val;
+    %two Const 2;
+    %lt Lt %n.val %two;
+    Bc %lt %isOne %recurse;
+%isOne:
+    %one Const 1;
+    Ret %one;
+%recurse:
+    %one.1 Const 1;
+    %s1 Sub %n.val %one.1;
+    %s2 Sub %s1 %one.1;
+    %v1 Call @fib %s1;
+    %v2 Call @fib %s2;
+    %res Add %v1 %v2;
+    Ret %res;
+}
+
+func_impl @main {
+    %n Const 5;
+    %fib Call @fib %n;
+    DebugPrint %fib;
+    Ret;
+}
+
+

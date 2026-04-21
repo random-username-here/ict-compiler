@@ -67,7 +67,6 @@ public:
     Refable(Refable &&o) = delete;
     Refable &operator=(Refable &&o) = delete;
 
-
     misc::ArrayView<By* const> refs() const { return m_refs; }
 
     ~Refable() {

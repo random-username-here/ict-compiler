@@ -1,0 +1,23 @@
+///
+/// Call a+b function
+///
+
+func_decl @add(%a i64, %b i64) i64;
+func_decl @main() void;
+
+func_impl @add {
+    %a.p        ArgPtr %a;
+    %a.v        Load[i64] %a.p;
+    %b.p        ArgPtr %b;
+    %b.v        Load[i64] %b.p;
+    %res        Add %a.v %b.v;
+                Ret %res;
+}
+
+func_impl @main {
+    %a          Const 12;
+    %b          Const 34;
+    %res        Call @add %a %b;
+                DebugPrint %res;
+                Ret;
+}

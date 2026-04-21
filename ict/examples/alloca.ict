@@ -2,12 +2,13 @@
 /// Allocating a place on stack, storing and printing from it.
 ///
 
-func_impl @main
-{
-    %addr   Alloca;
-    %val    Const 42;
-            Store %addr %val;
-    %read   Load %addr;
-            DebugPrint %read;
-            Ret;
+func_decl @main () void;
+
+func_impl @main {
+    %addr       Alloca[i64];
+    %val        Const 42;
+                Store[i64] %addr %val;
+    %read       Load[i64] %addr;
+                DebugPrint %read;
+                Ret;
 }

@@ -46,9 +46,10 @@ class Backend :
 {
 public:
     virtual misc::View archName() const = 0;
-    virtual OpKind str2lowOp(View name) const = 0;
-    virtual misc::View lowOp2str(OpKind k) const = 0;
-    virtual bool lowOpReturns(OpKind k) const = 0;
+    virtual int str2lowOp(View name) const = 0;
+    virtual misc::View lowOp2str(int k) const = 0;
+    virtual bool lowOpRequiresType(int k) const = 0;
+    virtual UPtr<Type> createReturnType(Operation *op) const = 0;
 
     virtual void emit(Manager *mgr, std::ostream &output) const = 0;
     virtual ~Backend() {}
@@ -75,6 +76,8 @@ class Manager {
     std::unordered_map<size_t, Analyzer*> m_analyzers;
     std::unordered_map<size_t, UPtr<Analysis>> m_analyses;
 public:
+
+    static Manager *main();
 
     Manager(ModManager &mm);
     
@@ -114,7 +117,8 @@ public:
     Module *module() { return m_module.get(); }
     Backend *backend() { return m_backend; }
     Frontend *frontend() { return m_frontend; }
-
+    const Backend *backend() const { return m_backend; }
+    const Frontend *frontend() const { return m_frontend; }
 };
 
 }

@@ -1,0 +1,19 @@
+///
+/// Pass argument to function
+///
+
+func_decl @func(%arg i64) void;
+func_decl @main() void;
+
+func_impl @func {
+    %arg.ptr ArgPtr %arg;
+    %arg.val Load[i64] %arg.ptr;
+    DebugPrint %arg.val;
+    Ret;
+}
+
+func_impl @main {
+    %val Const 67;
+    Call @func %val;
+    Ret;
+}

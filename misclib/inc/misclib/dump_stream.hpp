@@ -282,12 +282,14 @@ inline impl::LoggerRai error(View topic) { return log(topic, ERROR); }
 
 };
 
-// dump dumpable objects
-template<
-    typename T,
-    typename = decltype(std::declval<const T&>().dump(std::declval<std::ostream&>()))
->
-inline std::ostream &operator<<(std::ostream &os, const T &c) {
-    c.dump(os);
-    return os;
-}
+namespace std {
+    // dump dumpable objects
+    template<
+        typename T,
+        typename = decltype(std::declval<const T&>().dump(std::declval<std::ostream&>()))
+    >
+    inline std::ostream &operator<<(std::ostream &os, const T &c) {
+        c.dump(os);
+        return os;
+    }
+};

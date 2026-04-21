@@ -12,6 +12,13 @@ using namespace misc::color;
 
 namespace ict {
 
+static Manager *l_main_mgr = nullptr;
+
+Manager *Manager::main() {
+    return l_main_mgr;
+}
+
+
 void Manager::setSource(View source, View filename)
 {
     m_source = source;
@@ -29,6 +36,7 @@ Manager::Manager(ModManager &mm) :m_mm(mm)
     for (auto i : mm.allOfType<Analyzer>())
         m_analyzers[i->analysisId()] = i;
     m_passes = mm.allOfType<Pass>();
+    l_main_mgr = this;
 }
 
 bool Manager::setTargetArch(View name)
@@ -69,7 +77,6 @@ void Manager::parse()
     assert(frontend());
     misc::info(TAG) << "Running frontend " << ACCENT << frontend()->id() << RST << " for language " << ACCENT << frontend()->langName() << RST;
     m_module = frontend()->compile(this);
-    m_module->m_mgr = this;
 }
 void Manager::runAllPasses()
 {

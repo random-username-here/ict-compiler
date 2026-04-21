@@ -2,13 +2,15 @@
 /// Vregs defined in one block, used in another.
 ///
 
-func_impl @main
-{
-    %foo    Const 32;
-            Br %other;
+func_decl @main () void;
+
+func_impl @main {
+%start:
+    %foo        Const 32;
+                Br %other;
 %other:
-            Br %end;
+                Br %end;
 %end:
-            DebugPrint %foo;
-            Ret;
+                DebugPrint %foo;
+                Ret;
 }

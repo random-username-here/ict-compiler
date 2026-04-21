@@ -11,7 +11,7 @@ Here we have:
  - `misclib/` -- Custom data structures
     - `tree.hpp` -- Trees with strict child/parent typing. Backbone of every AST here.
     - `dump_stream.hpp` -- Wrapper around `std::ostream` for colors/indentation & logging library ontop of it.
-    - `array_view.hpp` -- Like `string_view`, but for arrays.
+    - `array_view.hpp` -- Like `string_view`, but for arrays. I probbably should remove/replace it with `std::span`.
     - ... and some small utilities
 
  - `modlib/` -- Plugin system
@@ -19,13 +19,11 @@ Here we have:
  - `ict/` -- Toy LLVM-inspired compiler toolkit
     - `core/` -- IR data structures, frontend/backend/... interface classes, runner.
     - `analyses/` -- Analyses
-        - `below/` -- Which blocks can be reached from that/from which blocks this one can be reached
-        - `crossblock/` -- During which blocks vreg must be stored somewhere
-        - TODO: `preds/` -- Block predecessor list
+        - TODO: `domination/` -- Block domination
+        - TODO: `loop-tree/` -- Finding loops, I experimented with that algorithm in other repo
     - `passes/` -- Optimization passes
         - TODO: `localize-const/` -- Duplicate crossblock `Const`-s to their destinations
         - TODO: `pat-simplify/` -- Simplifier using pattern matching
-        - TODO: `mem-to-reg/` -- Reducing `Alloca` usage
     - `ir/` -- IR reader from files
     - `arch/`
         - `ivm/` -- Stuff for my toy ISA
@@ -33,6 +31,7 @@ Here we have:
             - `hl2ll/` -- Instruction selection.
             - `basic-stackplan/` -- Stack frame planner.
             - `opt/`
+                - TODO: `reorder/` -- Reorder operations to remove constant `ToStack`/`FromStack` movement
                 - TODO: `alloca2off/` -- Replacing `Alloca` with stack frame offseting
     - `examples/` -- Sample pieces of IR
 

@@ -1,0 +1,22 @@
+///
+/// Read bytes of an integer
+/// 
+
+func_decl @main () void;
+
+func_impl @main {
+
+    %slot       Alloca[i16];
+    %val        Const 0xABCD;
+                Store[i16] %slot %val;
+
+    %lower      Load[i8] %slot;
+                DebugPrint %lower;
+
+    %one        Const 1;
+    %upos       Add[ptr] %slot %one;
+    %upper      Load[i8] %upos;
+                DebugPrint %upper;
+         
+                Ret;
+}

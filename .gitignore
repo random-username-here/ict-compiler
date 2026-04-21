@@ -2,3 +2,4 @@ build/
 .cache/
 .old/
 sandbox/
+!build/sample.sh

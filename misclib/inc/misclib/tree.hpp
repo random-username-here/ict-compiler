@@ -1,314 +1,521 @@
 /**
  * \file
- * \brief Slot-based AST trees
- *
- * This design is somewhat simular to LLVM's, except
- * LLVM has child items in linked lists.
+ * \brief A slot and item library for building AST-like trees, attempt 2
+ * \author Didyk Ivan
+ * \date 2026-04-10
+ * \todo Get some UML editor and think this through another time, this is ugly as hell.
  */
 #pragma once
-#include "misclib/array_view.hpp"
-#include "defs.hpp"
-#include <vector>
-#include <array>
+
 #include <cassert>
+#include <memory>
+#include <vector>
 
 namespace misc {
 
-template<typename Child>
-class Container;
-template<typename Self, typename Child>
-class StrictContainer;
-template<typename Self, typename Parent>
-class Item;
+//==============================================================================
+// Utilities
+//==============================================================================
 
-//------------------------------------------------------------------------------
-// Base container
-//------------------------------------------------------------------------------
+template<typename T>
+using UPtr = std::unique_ptr<T>;
+
+namespace detail {
 
 /**
- * \brief A container.
+ * \brief Class to obtain class type & value type from class member.
  *
- * It contains an array of children. How array is stored
- * (is that a dynamic array or static one) is up to
- * inheriting class.
+ * For example, if we have `Foo { Bar x; }`, `MemberTraits<&Foo::x>`
+ * will have `Class = Foo` and `Type = Bar`.
+ */
+template<auto Value>
+struct MemberTraits {};
+
+template<typename ClassT, typename TypeT, TypeT ClassT::* Value>
+struct MemberTraits<Value> {
+    using Class = ClassT;
+    using Type = TypeT;
+};
+
+/**
+ * Some slots are containers (`SlotList`). Things inheriting from
+ * `GenericSlot` are in them. This thing obtains the type of inner thing.
+ */
+template<typename T>
+struct SlotContainerItemT;
+
+template<typename T>
+using SlotContainerItem = typename SlotContainerItemT<T>::SlotType;
+
+};
+
+//==============================================================================
+// Item
+//==============================================================================
+
+template<typename ItemType>
+class GenericSlot;
+
+/**
+ * \brief Item which only knows a slot it is in.
+ * This class is specialized for different kinds of slots later.
+ * This item can be added to slots which inherit from that slot type.
+ */
+template<typename Self, typename Slot>
+class ItemBase {
+public:
+    using SlotType = Slot;
+    using ItemType = detail::SlotContainerItem<Slot>;
+private:
+    template<typename T>
+    friend class GenericSlot;
+    using ContItem = detail::SlotContainerItem<Slot>;
+    ContItem *m_slot = nullptr;
+public:
+    void m_setSlot(ContItem *s) { m_slot = s; }
+    ContItem *slot() { return m_slot; }
+    const ContItem *slot() const { return m_slot; }
+
+    template<typename T>
+    auto replace(UPtr<T> &&v) {
+        return this->slot()->replace(std::move(v));
+    }
+};
+
+template<typename Self, typename Slot = GenericSlot<Self>>
+class Item : public ItemBase<Self, Slot> {};
+
+//==============================================================================
+// One-item slot
+//==============================================================================
+
+/**
+ * \brief A slot base, which contains one item of specified type.
  *
- * Children can be acessed by index and replaced.
+ * This slot does not known anything about object it is in.
+ * This only accepts `Item`-s as template paremater,
+ * but does not check, because slots are defined while items
+ * are only forward declared.
  *
- * This variant has child's parent links of generic `Container<Child>`
- * type. To have them of your type (so, for example, `Function::parent()` is
- * `Module`), use `StrictContainer<Self, Child>`.
+ * Slots cannot be copied. This is a base class for all other slots.
+ *
+ * \tparam ItemType     --  Type of items in that slot
  *
  */
-template<typename Child>
-class Container {
+template<typename ItemType>
+class GenericSlot {
+    UPtr<ItemType> m_value;
 
-public:    
-    using ChildType = Child;
+public:
 
-                              /*----<//o//>----*/
-
-    // Methods intended to be overriden
-
-    /// Array of node's children
-    virtual ArrayView<const UPtr<Child>> children() const = 0;
-    virtual ArrayView<UPtr<Child>> children() = 0;
-
-    virtual ~Container() {};
-
-                              /*----<//o//>----*/
-    
-    // Helpers
-    
-    UPtr<Child> replaceChild(size_t slot, UPtr<Child> &&child) {
-        UPtr<Child> prev = std::move(children()[slot]);
-        if (prev)
-            p_dettachChild(prev.get(), slot);
-        if (child)
-            p_attachChild(child.get(), slot);
-        children()[slot] = std::move(child);
-        return prev;
+    UPtr<ItemType> replace(UPtr<ItemType> &&v) {
+        if (m_value)
+            m_value->m_setSlot(nullptr);
+        auto prevVal = std::move(m_value);
+        m_value = std::move(v);
+        if (m_value)
+            m_value->m_setSlot(static_cast<typename ItemType::ItemType*>(this));
+        return prevVal;
     }
 
-    UPtr<Child> *begin() { return children().begin(); }
-    UPtr<Child> *end() { return children().end(); }
+    GenericSlot() { }
+    GenericSlot(UPtr<ItemType> &&v) { replace(std::move(v)); }
+    GenericSlot(GenericSlot &&v) 
+        { replace(v.replace(nullptr)); }
+    GenericSlot &operator=(GenericSlot &&v) 
+        { replace(std::move(v)); return *this; }
 
-    const UPtr<Child> *begin() const { return children().begin(); }
-    const UPtr<Child> *end() const { return children().end(); }
+    ~GenericSlot() 
+        { replace(nullptr); }
 
-    size_t size() const { return children().size(); }
+    ItemType *get() { return this == nullptr ? nullptr : m_value.get(); }
+    const ItemType *get() const { return this == nullptr ? nullptr : m_value.get(); }
 
-                                  /*-----<<~>>-----*/
+    ItemType *operator->() { return get(); }
+    const ItemType *operator->() const { return get(); }
 
-    // SlotProxy and [] operator
+    ItemType &operator*() { return *get(); }
+    const ItemType &operator*() const { return *get(); }
 
-    // in non-const case we either assign value via replaceChild(),
-    // or decay into reference.
+    ItemType *operator=(UPtr<ItemType> &&v) {
+        replace(std::move(v));
+        return get();
+    }
+};
+
+/**
+ * A basic slot type, which:
+ *  - Has no known parent
+ *  - Will provide itself as slot type
+ */
 
 
-    /**
-     * \brief Version of `p_SlotProxy` for cases when container is constant.
-     */
-    class ConstSlotProxy {
-        friend class Container<Child>;
-        const Container<Child> &to;
-        size_t pos;
-        
-        ConstSlotProxy(const Container<Child> &cls, size_t idx)
-            :to(cls), pos(idx) {}
+/**
+ * \brief A slot which has only one child item.
+ */
+template<typename ParentType, typename ElemType>
+class Slot : public GenericSlot<ElemType> {
+    ParentType *m_parent;
+public:
+    Slot(ParentType *cont) :m_parent(cont), GenericSlot<ElemType>(nullptr)  {}
+    Slot(ParentType *cont, UPtr<ElemType> &&v) :m_parent(cont), GenericSlot<ElemType>(std::move(v)) {}
 
-        ConstSlotProxy() = delete;
+    ParentType *parent() { return m_parent; }
+    const ParentType *parent() const { return m_parent; }
+    using GenericSlot<ElemType>::operator=;
+
+    operator bool() const { return this->get() != nullptr; }
+};
+
+namespace detail {
+
+template<typename T>
+struct SlotContainerItemT<GenericSlot<T>> { using SlotType = GenericSlot<T>; };
+
+template<typename T, typename P>
+struct SlotContainerItemT<Slot<P, T>> { using SlotType = Slot<P, T>; };
+
+};
+
+//==============================================================================
+// Slot list
+//==============================================================================
+
+template<typename ParentType, typename ElemType>
+class SlotList {
+public:
+    class Node;
+private:
+    UPtr<Node> m_first;
+    Node *m_last = nullptr;
+    ParentType *m_parent = nullptr;
+    size_t m_size = 0;
+public:
+
+    SlotList(ParentType *p) :m_parent(p) {}
+    SlotList(const SlotList &v) = delete;
+    SlotList& operator=(const SlotList &v) = delete;
+
+    template<typename ...Args>
+    SlotList(ParentType *p, Args &&...args) :m_parent(p) {
+        (insertBefore(nullptr, std::forward<Args>(args)), ...);
+    }
+    
+    size_t size() const { return m_size; }
+
+    class Node : public GenericSlot<ElemType> {
+        friend class SlotList;
+
+        SlotList *m_list;
+        UPtr<Node> m_next = nullptr;
+        Node *m_prev = nullptr;
     public:
-        const Child* operator->() const { return to.children()[pos].get(); }
-        const Child* ptr() const { return to.children()[pos].get(); }
-        const UPtr<Child> &uptr() const { return to.children()[pos]; }
-        const Child &operator*() const { return *to.children()[pos]; }
+        Node(UPtr<ElemType> &&v, SlotList *l) :m_list(l), GenericSlot<ElemType>(std::move(v)) {}
 
-        operator const Child*() const { return to.children()[pos].get(); }
+        SlotList *list() { return m_list; }
+        const SlotList *list() const { return m_list; }
+        Node *prev() { return m_prev; }
+        const Node *prev() const { return m_prev; }
+        Node *next() { return m_next.get(); }
+        const Node *next() const { return m_next.get(); }
+        ParentType *parent() { return m_list->m_parent; }
+        const ParentType *parent() const { return m_list->m_parent; }
+        using GenericSlot<ElemType>::operator=;
     };
 
-    /**
-     * \brief A special object, assignment to which will replace child
-     */ 
-    class SlotProxy {
-        // TODO: templated proxy for something like this:
-        //       `MISC_SPEC_SLOT(label, 0, Label)`
-        //       (In 0'th slot only can be `Label`)
-        friend class Container<Child>;
-        Container<Child> &to;
-        size_t pos;
-        
-        SlotProxy(Container<Child> &cls, size_t idx)
-            :to(cls), pos(idx) {}
+    ElemType *first() { return m_first ? m_first->get() : nullptr; }
+    ElemType *last() { return m_last ? m_last->get() : nullptr; }
 
-        SlotProxy() = delete;
+    const ElemType *first() const { return m_first ? m_first->get() : nullptr; }
+    const ElemType *last() const { return m_last ? m_last->get() : nullptr; }
+
+
+private:
+
+    // This will probbably not work with STL algorithms, but I need iterators
+    // just to iterate elements in a for loop.
+    template<typename NodeType>
+    class IteratorBase {
+        friend class SlotList;
+        NodeType *m_elem;
+        IteratorBase(NodeType *n) :m_elem(n) {}
     public:
-        UPtr<Child> operator=(UPtr<Child> &&child) {
-            return to.replaceChild(pos, std::move(child));
+
+        auto *operator->() { return **m_elem; }
+        const ElemType *operator->() const { return **m_elem; }
+        auto *operator*() { return (*m_elem).get(); }
+        const ElemType *operator*() const { return (*m_elem).get(); }
+
+        bool operator==(IteratorBase it) const { return it.m_elem == m_elem; }  
+        bool operator!=(IteratorBase it) const { return it.m_elem != m_elem; }  
+
+        IteratorBase &operator++() { m_elem = m_elem ? m_elem->next() : nullptr; return *this; }
+        IteratorBase &operator--() { m_elem = m_elem ? m_elem->prev() : nullptr; return *this; }
+
+        IteratorBase operator++(int) { auto v = *this; m_elem = m_elem ? m_elem->next() : nullptr; return v; }
+        IteratorBase operator--(int) { auto v = *this; m_elem = m_elem ? m_elem->prev() : nullptr; return v; }
+    };
+public:
+
+    using Iterator = IteratorBase<Node>;
+    using ConstIterator = IteratorBase<const Node>;
+
+    Iterator begin() { return Iterator(m_first.get()); }
+    Iterator end() { return Iterator(nullptr); }
+    ConstIterator begin() const { return ConstIterator(m_first.get()); }
+    ConstIterator end() const { return ConstIterator(nullptr); }
+
+    template<typename El = ElemType>
+    El *insertAfter(ElemType *child, UPtr<El> &&newOne) {
+        auto ptr = newOne.get();
+        auto o_new = std::make_unique<Node>(std::move(newOne), this);
+
+        if (child == nullptr) {
+            if (m_first) {
+                auto o_first = static_cast<UPtr<Node>&&>(std::move(m_first));
+                o_first->m_prev = o_new.get();
+                o_new->m_next = std::move(o_first);
+                m_first = std::move(o_new);
+            } else {
+                m_first = std::move(o_new);
+                m_last = static_cast<Node*>(m_first.get());
+            }
+        } else {
+            auto prev = child->slot();
+            o_new->m_prev = prev;
+            if (prev->m_next) {
+                auto o_next = std::move(prev->m_next);
+                o_next->m_prev = o_new.get();
+                o_new->m_next = std::move(o_next);
+            } else {
+                m_last = o_new.get();
+            }
+            prev->m_next = std::move(o_new);
         }
+        m_size++;
+        return ptr;
+    }
 
-        Child* operator->() { return to.children()[pos].get(); }
-        const Child* operator->() const { return to.children()[pos].get(); }
+    template<typename El = ElemType, typename ...Args>
+    El *createAfter(ElemType *child, Args &&...args) {
+        auto o_elem = std::make_unique<El>(std::forward<Args>(args)...);
+        auto ptr = o_elem.get();
+        insertAfter(child, std::move(o_elem));
+        return ptr;
+    }
 
-        Child* ptr() { return to.children()[pos].get(); }
-        const Child* ptr() const { return to.children()[pos].get(); }
+    template<typename El = ElemType>
+    El *insertBefore(ElemType *child, UPtr<El> &&e) {
+        return insertAfter(child == nullptr ? last() : static_cast<Node*>(child->slot())->prev()->get(), std::move(e));
+    }
 
-        UPtr<Child> &uptr() { return to.children()[pos]; }
-        const UPtr<Child> &uptr() const { return to.children()[pos]; }
+    template<typename El = ElemType, typename ...Args>
+    El *createBefore(ElemType *child, Args &&...args) {
+        auto o_elem = std::make_unique<El>(std::forward<Args>(args)...);
+        auto ptr = o_elem.get();
+        insertBefore(child, std::move(o_elem));
+        return ptr;
+    }
 
-        Child &operator*() { return *to.children()[pos]; }
-        const Child &operator*() const { return *to.children()[pos]; }
-
-        operator ConstSlotProxy() {
-            return ConstSlotProxy(to, pos);
+    UPtr<ElemType> extract(ElemType *child) {
+        auto node = static_cast<Node*>(child->slot());
+        assert(node->m_list == this);
+        m_size--;
+        if (m_first.get() == node) {
+            auto o_first = std::move(m_first);
+            m_first = std::move(o_first->m_next);
+            if (m_first) m_first->m_prev = nullptr;
+            if (m_last == node) m_last = nullptr;
+            return o_first->replace(nullptr);
+        } else {
+            auto o_first = std::move(node->m_prev->m_next);
+            node->m_prev->m_next = std::move(node->m_next);
+            if (node->m_prev->m_next)
+                node->m_prev->m_next->m_prev = node->m_prev;
+            else
+                m_last = node->m_prev;
+            return o_first->replace(nullptr);
         }
-        
-        operator Child*() { return to.children()[pos].get(); }
+    }
+
+    class Inserter {
+        SlotList *m_list;
+        ElemType *m_before;
+    public:
+        Inserter(SlotList *l, ElemType *before = nullptr) :m_list(l), m_before(before) {}
+
+        template<typename El = ElemType>
+        El *insert(UPtr<El> &&p) { return m_list->insertBefore<El>(m_before, std::move(p)); }
+
+        template<typename El = ElemType, typename ...Args>
+        El *create(Args &&...args) { return m_list->createBefore(m_before, std::forward<Args>(args)...); }
     };
 
-    ConstSlotProxy child(size_t i) const {
-        return ConstSlotProxy(*this, i);
-    }
-    SlotProxy child(size_t i) {
-        return SlotProxy(*this, i);
-    }
+    Inserter backInserter() { return Inserter(this, nullptr); }
+    Inserter inserterBefore(ElemType *el) { return Inserter(this, el); }
+};
 
-    ConstSlotProxy operator[](size_t i) const { return child(i); }
-    SlotProxy operator[](size_t i) { return child(i); }
+namespace detail {
 
-protected:
-
-                              /*-----<<~>>-----*/
-
-    // Manual attachChild & dettachChild
-    // For cases when we are push-ing children
-    // These methods are overriden in `StrictContainer`
-
-    virtual void p_attachChild(Child *ch, size_t slot) = 0;
-    virtual void p_dettachChild(Child *ch, size_t slot) = 0;
+template<typename T, typename P>
+struct SlotContainerItemT<SlotList<P, T>> { using SlotType = typename SlotList<P, T>::Node; };
 
 };
 
-/**
- * \brief Container where child's parent links are strongly typed.
- */
-template<typename Self, typename Child>
-class StrictContainer : public Container<Child> {
+//==============================================================================
+// Slot vector
+//==============================================================================
 
-protected:
-    virtual void p_attachChild(Child *ch, size_t slot) {
-        ch->m_attach(static_cast<Self*>(this), slot);
-    }
-
-    virtual void p_dettachChild(Child *ch, size_t slot) {
-        ch->m_dettach(static_cast<Self*>(this), slot);
-    }
-};
-
-//------------------------------------------------------------------------------
-// Various container types
-//------------------------------------------------------------------------------
-
-/**
- * \brief A container with fixed count of child nodes.
- *
- * For example, binary operators will inherit this.
- */
-template<typename Self, typename Child, size_t n>
-class FixedContainer : public StrictContainer<Self, Child> {
-    std::array<UPtr<Child>, n> m_children;
+template<typename ParentType, typename ElemType>
+class SlotVector {
 public:
-    virtual ArrayView<const UPtr<Child>> children() const override { return m_children; }
-    virtual ArrayView<UPtr<Child>> children() override { return m_children; }
-};
+    class Entry : public GenericSlot<ElemType> {
+        friend class SlotVector;
+        SlotVector *m_vec;
 
-/**
- * \brief A container with items in `std::vector`
- *
- * For high-child-count nodes, like Module-s.
- */
-template<typename Self, typename Child>
-class VarContainer : public StrictContainer<Self, Child> {
-    std::vector<UPtr<Child>> m_children;
+    public:
+        Entry(UPtr<ElemType> &&v, SlotVector *sv) :m_vec(sv), GenericSlot<ElemType>(std::move(v)) {}
+
+        ParentType *parent() { return m_vec->m_parent; }
+        const ParentType *parent() const { return m_vec->m_parent; }
+        using GenericSlot<ElemType>::operator=;
+
+    };
+private:
+    ParentType *m_parent;
+    std::vector<Entry> m_entries;
 public:
-    virtual ArrayView<const UPtr<Child>> children() const override { return m_children; }
-    virtual ArrayView<UPtr<Child>> children() override { return m_children; }
 
-    auto push(UPtr<Child> &&ch) {
-        m_children.push_back(std::move(ch));
-        this->p_attachChild(m_children.back().get(), m_children.size()-1);
-        return this->child(m_children.size()-1);
+    SlotVector(ParentType *p) :m_parent(p) {}
+    SlotVector(const SlotVector &v) = delete;
+    SlotVector& operator=(const SlotVector &v) = delete;
+
+    template<typename ...Args>
+    SlotVector(ParentType *p, Args &&...args) :m_parent(p) {
+        (push(std::forward<Args>(args)), ...);
     }
 
-    auto insert(size_t at, UPtr<Child> &&ch) {
-        for (size_t i = at; i < m_children.size(); ++i)
-            this->p_dettachChild(m_children[i].get(), i);
-        m_children.insert(m_children.begin() + at, std::move(ch));
-        for (size_t i = at; i < m_children.size(); ++i)
-            this->p_attachChild(m_children[i].get(), i);
-        return this->child(at);
+    ElemType *first() { return m_entries.empty() ? nullptr : m_entries.front().get(); }
+    ElemType *last() { return m_entries.empty() ? nullptr : m_entries.back().get(); }
+
+    ElemType *at(size_t i) { return m_entries[i].get(); }
+    const ElemType *at(size_t i) const { return m_entries[i].get(); }
+    ElemType *operator[](size_t i) { return m_entries[i].get(); }
+    const ElemType *operator[](size_t i) const { return m_entries[i].get(); }
+
+    ElemType *push(UPtr<ElemType> &&v) { m_entries.push_back(Entry(std::move(v), this)); return m_entries.back().get(); }
+    UPtr<ElemType> pop() {
+        auto o_elem = m_entries.back().replace(nullptr);
+        m_entries.pop_back();
+        return o_elem;
     }
 
-    UPtr<Child> extract(size_t at) {
-        for (size_t i = at; i < m_children.size(); ++i)
-            this->p_dettachChild(m_children[i].get(), i);
-        auto v = std::move(m_children[at]);
-        m_children.erase(m_children.begin() + at);
-        for (size_t i = at; i < m_children.size(); ++i)
-            this->p_attachChild(m_children[i].get(), i);
-        return v;
-    }
+private:
 
-    UPtr<Child> pop() {
-        this->p_dettachChild(m_children.back().get(), m_children.size()-1);
-        UPtr<Child> rv = std::move(m_children.back());
-        m_children.pop_back();
-        return rv;
-    }
+    template<typename BaseType>
+    class IteratorBase {
+        friend class SlotVector;
+        BaseType *m_vec;
+        size_t m_pos = 0;
+    public:
 
-};
+        IteratorBase(BaseType *vec, size_t pos) :m_vec(vec), m_pos(pos) {}
 
-//------------------------------------------------------------------------------
-// Container item
-//------------------------------------------------------------------------------
+        auto *operator->() { return m_vec->at(m_pos); }
+        const ElemType *operator->() const { return m_vec->at(m_pos); }
+        auto *operator*() { return m_vec->at(m_pos); }
+        const ElemType *operator*() const { return m_vec->at(m_pos); }
 
-/**
- * \brief Item in one of AST containers
- */
-template<typename Self, typename Parent = Container<Self>>
-class Item {
-    // see Container why
-    //static_assert(IsExactSpecialization<Parent, Container>, "Parent of Item must subclass Container");
-    //static_assert(std::is_base_of_v<Self, typename Parent::ChildType>, "Child item must be placeable into Parent");
+        bool operator==(IteratorBase it) const { return it.m_vec == m_vec && it.m_pos == m_pos; }  
+        bool operator!=(IteratorBase it) const { return !(it == *this); }  
 
-    template<typename Child>
-    friend class Container;
-    template<typename HSelf, typename Child>
-    friend class StrictContainer;
-
-    Parent *m_parent = nullptr;
-    size_t m_slot;
-
-    void m_attach(Parent *parent, size_t slot) {
-        assert(m_parent == nullptr);
-        m_parent = parent;
-        m_slot = slot;
-    }
-
-    void m_dettach(Parent *parent, size_t slot) {
-        assert(m_parent == parent);
-        assert(m_slot == slot);
-        m_parent = nullptr;
-        m_slot = -1;
-    }
+        IteratorBase &operator++() { m_pos++; return *this; }
+        IteratorBase &operator--() { m_pos--; return *this; }
+        IteratorBase operator++(int) { auto v = *this; m_pos++; return v; }
+        IteratorBase operator--(int) { auto v = *this; m_pos--; return v; }
+    };
 
 public:
-    using ParentType = Parent;
 
-    Parent *parent() const { return m_parent; }
-    size_t slotInParent() const { return m_slot; }
+    using Iterator = IteratorBase<SlotVector>;
+    using ConstIterator = IteratorBase<const SlotVector>;
 
-    UPtr<Self> replaceWith(UPtr<Self> &&val) {
-        assert(parent() != nullptr);
-        return static_cast<UPtr<Self>>(parent()->replaceChild(slotInParent(), std::move(val)));
-    } 
+    size_t size() const { return m_entries.size(); }
+
+    Iterator begin() { return Iterator(this, 0); }
+    Iterator end() { return Iterator(this, size()); }
+    ConstIterator begin() const { return ConstIterator(this, 0); }
+    ConstIterator end() const { return ConstIterator(this, size()); }
 };
 
+namespace detail {
+
+template<typename T, typename P>
+struct SlotContainerItemT<SlotVector<P, T>> { using SlotType = typename SlotVector<P, T>::Entry; };
+
+};
+
+
+//==============================================================================
+// Item
+//==============================================================================
+
+/**
+ * \brief Item specialization for cases when slot knows parent.
+ */
+template<typename Self, typename ItemType, typename ContType>
+class Item<Self, Slot<ContType, ItemType>> : public ItemBase<Self, Slot<ContType, ItemType>> {
+public:
+    ContType* parent() { return this->slot()->parent(); }
+    const ContType* parent() const { return this->slot()->parent(); }
 };
 
 /**
- * Declare an AST slot with given name.
- * Expands to getter & const getter for child in that slot.
+ * \brief Item specialization for cases when slot knows parent.
  */
-#define MISC_SLOT(name, id)\
-    SlotProxy name() { return child(id); }\
-    ConstSlotProxy name() const { return child(id); }    
+template<typename Self, typename ItemType, typename ContType>
+class Item<Self, SlotList<ContType, ItemType>> : public ItemBase<Self, SlotList<ContType, ItemType>> {
+public:
+    ItemType *next() { return this->slot()->next()->get(); }
+    const ItemType *next() const { return this->slot()->next()->get(); }
 
-/**
- * Declare `::create()` function.
- */
-#define MISC_CREATEFUNC(cls)\
-    template<typename ...Args>\
-    static misc::UPtr<cls> create(Args ...args) {\
-        return std::make_unique<cls>(std::forward<decltype(args)>(args)...);\
+    ItemType *prev() { return this->slot()->prev()->get(); }
+    const ItemType *prev() const { return this->slot()->prev()->get(); }
+
+    ContType* parent() { return this->slot()->parent(); }
+    const ContType* parent() const { return this->slot()->parent(); }
+
+    SlotList<ContType, ItemType> *parentList() { return this->slot()->list(); }
+    const SlotList<ContType, ItemType> *parentList() const { return this->slot()->list(); }
+
+    UPtr<Self> extractSelf() {
+        return static_cast<UPtr<Self>>(this->slot()->list()->extract(static_cast<Self*>(this)));
     }
+};
 
+template<typename Self, typename ItemType, typename ContType>
+class Item<Self, SlotVector<ContType, ItemType>> : public ItemBase<Self, SlotVector<ContType, ItemType>> {
+public:
+    ContType* parent() { return this->slot()->parent(); }
+    const ContType* parent() const { return this->slot()->parent(); }
+};
+
+namespace detail {
+    template<typename T>
+    struct MaybeReturnTypeT { using Type = T; };
+    template<typename Rt, typename ...Args>
+    struct MaybeReturnTypeT<Rt(Args...)> { using Type = Rt; };
+    template<typename Cls, typename Rt, typename ...Args>
+    struct MaybeReturnTypeT<Rt(Cls::*)(Args...)> { using Type = Rt; };
+
+    template<typename T>
+    using MaybeReturnType = typename MaybeReturnTypeT<T>::Type;
+
+    template<typename T, typename R, typename ...Args>
+    constexpr auto non_cv_method(R (T::*x)(Args ...args)) { return x; }
+};
+
+
+#define MISC_ITEM_IN(Self, In) misc::Item<Self, std::remove_reference_t<std::remove_pointer_t<misc::detail::MaybeReturnType<decltype(misc::detail::non_cv_method(In))>>>>
+
+};

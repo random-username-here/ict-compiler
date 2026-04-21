@@ -2,17 +2,19 @@
 /// Conditional branching
 ///
 
-func_impl @main
-{
-    %cond Const 1;
-    Bc %cond %then %else;
+func_decl @main () void;
+
+func_impl @main {
+%start:
+    %cond       Const 1;
+                Bc %cond %then %else;
 %then:
-    DebugPrint 1;
-    Br %end;
+                DebugPrint 1;
+                Br %end;
 %else:
-    DebugPrint 0;
-    Br %end;
+                DebugPrint 0;
+                Br %end;
 %end:
-    DebugPrint 2;
-    Ret;
+                DebugPrint 2;
+                Ret;
 }
