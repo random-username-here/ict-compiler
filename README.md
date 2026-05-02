@@ -14,11 +14,13 @@ Here we have:
     - `array_view.hpp` -- Like `string_view`, but for arrays. I probbably should remove/replace it with `std::span`.
     - ... and some small utilities
 
- - `modlib/` -- Plugin system
+ - `modlib/` -- Plugin system TODO: upgrade it to bardak's modlib
 
  - `ict/` -- Toy LLVM-inspired compiler toolkit
-    - `core/` -- IR data structures, frontend/backend/... interface classes, runner.
-    - `analyses/` -- Analyses
+    - `core/` -- IR data structures, frontend/backend/... interface classes, runner. TODO: Decouple Manager from Module
+    - `analyses/` -- Analyses. TODO: I should redo their interface, so they are per-function.
+        - There were `crossblock` (in which blocks vreg must exist) && `above` (which block is reachable from which),
+          which were meant for smarter vreg allocator, but were removed after big IR structure rewrite. 
         - TODO: `domination/` -- Block domination
         - TODO: `loop-tree/` -- Finding loops, I experimented with that algorithm in other repo
     - `passes/` -- Optimization passes
@@ -29,13 +31,16 @@ Here we have:
         - `ivm/` -- Stuff for my toy ISA
             - `backend/` -- Backend. Defines low-level ops in `ict/arch/ivm.hpp`, and contains functions to emit them.
             - `hl2ll/` -- Instruction selection.
-            - `basic-stackplan/` -- Stack frame planner.
+            - `basic-stackplan/` -- "register" allocator, which just spills everything onto stack.
             - `opt/`
-                - TODO: `reorder/` -- Reorder operations to remove constant `ToStack`/`FromStack` movement
+                - TODO!!!: `simple-reorder/` -- Reorder operations in one block to remove constant `ToStack`/`FromStack` movement
                 - TODO: `alloca2off/` -- Replacing `Alloca` with stack frame offseting
     - `examples/` -- Sample pieces of IR
 
- - TODO: `icc/` -- C compiler
+ - `scl/` -- Simple compiled language
+ - `ivm/` -- Pieces for running compiled IVM programs
+
+TODO: write readmes
 
 ## Architecture
 

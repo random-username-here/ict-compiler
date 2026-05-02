@@ -1,0 +1,9 @@
+fn puti(i64 v);
+
+fn add(i64 a, i64 b) i64 {
+    return a + b;
+}
+
+fn main() {
+    puti(add(123, 231));
+}

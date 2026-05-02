@@ -40,7 +40,9 @@ class IvmBackend : public ict::Backend {
 
     void emit(ict::Manager *mgr, std::ostream &output) const override
     {
-        for (auto func : mgr->module()->funcImpls()) {
+        for (auto it : mgr->module()->impls()) {
+            auto func = dynamic_cast<ict::FunctionImpl*>(it);
+            if (!func) continue; // TODO: blobs
             output << ".func\n";
             output << func->decl()->name() << ":\n" << misc::beginBlock;
             for (auto block : func->blocks()) {

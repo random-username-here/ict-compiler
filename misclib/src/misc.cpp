@@ -28,9 +28,9 @@ impl::LoggerRai log(View topic, LogLevel level) {
         case ERROR:     errs() << RED << BOLD << "ERRR" << setAccent(RED);  break;
     }
     errs() << RST << DGRAY << " > " << RST;
-    //                 tag                 > type > 
-    //                |0123456789012346789   0123   |
-    const char *tab = "                             ";
+    //                 tag                  > type > 
+    //                |01234567890123456789   0123   |
+    const char *tab = "                              ";
     errs().pushPrefix(tab);
     return impl::LoggerRai(errs()); // due to rvo, we can do this
 }

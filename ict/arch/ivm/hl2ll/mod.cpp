@@ -131,8 +131,6 @@ class HL2LL : public Pass
                 inserter.create(IVM_R_SADD, nullptr);
                 inserter.create(IVM_R_GSP, nullptr);
                 auto res = inserter.create(IVM_FROMSTACK, nullptr);
-                for (auto i : op->refs())
-                    misc::verb(TAG) << i << " " << i->parent();
                 op->replaceRefsWith(res);
                 op->extractSelf();
                 return;
@@ -211,7 +209,10 @@ class HL2LL : public Pass
         }
 
         misc::info(TAG) << "Work is being done";
-        for (auto func : mgr->module()->funcImpls()) {
+        for (auto it : mgr->module()->impls()) {
+            auto func = dynamic_cast<FunctionImpl*>(it);
+            if (!func) continue;
+
             std::unordered_map<ArgDecl*, int> offsets;
             // Stack frame:
             // <0 - locals

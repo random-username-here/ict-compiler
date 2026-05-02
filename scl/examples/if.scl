@@ -1,0 +1,7 @@
+fn puti(i64 v);
+
+fn main() {
+    i64 x = 3;
+    if (x < 3) puti(1);
+    else puti(0);
+}

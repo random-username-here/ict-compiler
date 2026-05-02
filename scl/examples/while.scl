@@ -1,0 +1,9 @@
+fn puti(i64 v);
+
+fn main() {
+    i64 cnt = 9;
+    while (cnt >= 0) {
+        puti(cnt);
+        cnt--;
+    }
+}

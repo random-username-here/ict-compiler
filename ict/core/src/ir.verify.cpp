@@ -162,8 +162,10 @@ bool Module::verify() const {
         misc::warn(TAG) << "Manager has no backend, low-level ops are not supported";
 
     bool ok = true;
-    for (auto i : funcImpls())
-        ok &= checkFunction(i);
+    for (auto i : impls()) {
+        if (auto func = dynamic_cast<const FunctionImpl*>(i))
+            ok &= checkFunction(func);
+    }
     return ok;
 }
 

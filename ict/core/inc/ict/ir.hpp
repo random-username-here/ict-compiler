@@ -22,6 +22,9 @@ using misc::View;
 class Manager;      ///< Manages passes, there is usually one manager, not here
 class Module;       ///< One compilation unit (file)
 
+class TopDecl;      ///< Top-level declaration, with name.
+class TopImpl;      ///< Top-level implementation for some declaration.
+
 class FunctionDecl; ///< Function declaration, with argument types, etc.
 class ArgDecl;      ///< Named argument in function declaration
 
@@ -49,16 +52,16 @@ class Module
 {
     friend class Manager;
     std::string m_name;
-    misc::SlotList<Module, FunctionDecl> m_funcDecls;
-    misc::SlotList<Module, FunctionImpl> m_funcImpls;
+    misc::SlotList<Module, TopDecl> m_decls;
+    misc::SlotList<Module, TopImpl> m_impls;
 public:
 
-    Module(View name = "unnamed") :m_funcDecls(this), m_funcImpls(this), m_name(name) {}
+    Module(View name = "unnamed") :m_decls(this), m_impls(this), m_name(name) {}
 
-    auto &funcDecls() { return m_funcDecls; }
-    auto &funcImpls() { return m_funcImpls; }
-    auto &funcDecls() const { return m_funcDecls; }
-    auto &funcImpls() const { return m_funcImpls; }
+    auto &decls() { return m_decls; }
+    auto &impls() { return m_impls; }
+    auto &decls() const { return m_decls; }
+    auto &impls() const { return m_impls; }
     View name() const { return m_name; }
 
     /** Find function with given name */
@@ -79,15 +82,52 @@ public:
 };
 
 /**
+ * Any global declaration -- both functions and const data buffers.
+ * This class can be used as-is, without inheriting. This is for symbols
+ * with unknown type (blobs).
+ * TODO: mark some as non-const? so globals can be implemented
+ */
+class TopDecl :
+        public MISC_ITEM_IN(TopDecl, &Module::decls),
+        public Refable<FuncArg>
+{
+    friend class TopImpl;
+    TopImpl *m_impl = nullptr;
+    std::string m_name;
+public:
+    TopDecl() :m_name("") {}
+    TopDecl(View name) :m_name(name) {}
+    
+    View name() const { return m_name; }
+    void setName(View n) { m_name = n; }
+
+    TopImpl *impl() { return m_impl; }
+    const TopImpl *impl() const { return m_impl; }
+    
+    virtual void dump(std::ostream &os) const;
+};
+
+class TopImpl :
+        public MISC_ITEM_IN(TopImpl, &Module::impls)
+{
+    TopDecl *m_decl = nullptr;
+public:
+    TopImpl(TopDecl *decl) :m_decl(decl) {
+        assert(decl->m_impl == nullptr);
+        decl->m_impl = this;
+    }
+    TopDecl *decl() { return m_decl; }
+    const TopDecl *decl() const { return m_decl; }
+    virtual void dump(std::ostream &os) const = 0;
+};
+
+/**
  * Function declaration -- like `func_decl int64 @add(int64 %a, int64 %b)`.
  */
 class FunctionDecl :
-        public MISC_ITEM_IN(FunctionDecl, &Module::funcDecls),
-        public Refable<FuncArg> 
+        public TopDecl
 {
     friend class FunctionImpl;
-    FunctionImpl *m_impl = nullptr;
-    std::string m_name;
     misc::SlotVector<FunctionDecl, ArgDecl> m_args;
     misc::Slot<FunctionDecl, Type> m_retType;
 
@@ -96,16 +136,14 @@ class FunctionDecl :
 
 public:
 
-    FunctionDecl() :m_name(""), m_args(this), m_retType(this) {}
+    FunctionDecl() :TopDecl(""), m_args(this), m_retType(this) {}
 
     template<typename ...Args>
-    FunctionDecl(View name, UPtr<Type> &&rt, Args &&...args) :m_name(name), m_args(this), m_retType(this) {
+    FunctionDecl(View name, UPtr<Type> &&rt, Args &&...args) :TopDecl(name), m_args(this), m_retType(this) {
         m_retType.replace(std::move(rt));
         (m_args.push(l_toArg(std::move(args))), ...);
     }
 
-    View name() const { return m_name; }
-    void setName(View n) { m_name = n; }
     auto &args() { return m_args; }
     const auto &args() const { return m_args; }
     auto &retType() { return m_retType; }
@@ -117,9 +155,9 @@ public:
      */
     FunctionImpl *implement();
 
-    FunctionImpl *impl() { return m_impl; }
-    const FunctionImpl *impl() const { return m_impl; }
-    void dump(std::ostream &os) const;
+    FunctionImpl *impl();
+    const FunctionImpl *impl() const;
+    void dump(std::ostream &os) const override;
     MISC_CREATEFUNC(FunctionDecl);
 };
 
@@ -149,27 +187,24 @@ public:
  * Function implementation, must be attached to some declaration.
  */
 class FunctionImpl :
-        public MISC_ITEM_IN(FunctionImpl, &Module::funcImpls)
+        public TopImpl
 {
-    FunctionDecl *m_decl = nullptr;
     misc::SlotList<FunctionImpl, BasicBlock> m_blocks;
-
 public:
 
-    FunctionImpl(FunctionDecl *decl) :m_decl(decl), m_blocks(this) {
+    FunctionImpl(FunctionDecl *decl) :TopImpl(decl), m_blocks(this) {
         assert(decl);
-        assert(decl->m_impl == nullptr);
-        decl->m_impl = this;
     }
     
-    BasicBlock *createBlock(View name);
+    BasicBlock *createBlock(View name = "");
 
-    FunctionDecl *decl() { return m_decl; }
-    const FunctionDecl *decl() const { return m_decl; }
+    FunctionDecl *decl() { return static_cast<FunctionDecl*>(TopImpl::decl()); }
+    const FunctionDecl *decl() const { return static_cast<const FunctionDecl*>(TopImpl::decl()); }
+
     auto &blocks() { return m_blocks; }
     const auto &blocks() const { return m_blocks; }
 
-    void dump(std::ostream &os) const;
+    void dump(std::ostream &os) const override;
     MISC_CREATEFUNC(FunctionImpl);
 };
 
@@ -465,7 +500,7 @@ FunctionDecl *Module::findOrDeclareFunc(View name, UPtr<Type> &&rt, Args &&...ar
                 return nullptr;
         return existing;
     } else {
-        return funcDecls().createBefore(nullptr, name, std::move(rt), std::forward<Args>(args)...);
+        return decls().createBefore<FunctionDecl>(nullptr, name, std::move(rt), std::forward<Args>(args)...);
     }
 }
 

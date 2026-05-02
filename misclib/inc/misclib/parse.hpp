@@ -53,7 +53,7 @@ enum TokenType {
  */
 struct Token {
     View view;
-    TokenType type;
+    TokenType type = TOK_EOF;
 
     std::string decodeStr() const;
     Number decodeNum() const;

@@ -52,9 +52,9 @@ int main(int argc, const char *argv[]) {
         return 1;
     }
 
-    mgr.parse();
+    bool ok = mgr.parse();
    
-    if (!mgr.module()) {
+    if (!ok) {
         misc::error(TAG) << "Frontend failed, bailing out!";
         return 1;
     }

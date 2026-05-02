@@ -1,0 +1,11 @@
+fn puti(i64 v);
+
+fn change(*i64 v) {
+    *v = 42;
+}
+
+fn main() {
+    i64 x = 0;
+    change(&x);
+    puti(x);
+}

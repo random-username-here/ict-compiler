@@ -8,23 +8,26 @@
 using namespace misc::color;
 
 namespace ict {
-
 FunctionDecl *Module::findFunc(View name) {
-    for (auto i : funcDecls())
+    for (auto i : decls())
         if (i->name() == name)
-            return i;
+            return dynamic_cast<FunctionDecl*>(i);
     return nullptr;
 }
     
 void Module::dump(std::ostream &os) const {
     os << PURPLE << BOLD << "Module " << RST << name() << "\n" << misc::beginBlock;
     os << DGRAY << "// decls:\n";
-    for (auto i : funcDecls())
+    for (auto i : decls())
         i->dump(os);
     os << DGRAY << "// impls:\n";
-    for (auto i : funcImpls())
+    for (auto i : impls())
         i->dump(os);
     os << misc::endBlock;
+}
+
+void TopDecl::dump(std::ostream &os) const {
+    os << PURPLE << "decl " << RST << BOLD << "@" << name() << RST << DGRAY << ";\n" << RST;
 }
 
 UPtr<ArgDecl> FunctionDecl::l_toArg(UPtr<Type> &&t) {
@@ -33,8 +36,7 @@ UPtr<ArgDecl> FunctionDecl::l_toArg(UPtr<Type> &&t) {
 
 FunctionImpl *FunctionDecl::implement() {
     if (impl()) return nullptr;
-    m_impl = parent()->funcImpls().createBefore(nullptr, this);
-    return m_impl;
+    return parent()->impls().createBefore<FunctionImpl>(nullptr, this);
 }
 
 void FunctionDecl::dump(std::ostream &os) const {
@@ -59,6 +61,14 @@ void ArgDecl::dump(std::ostream &os) const {
 
 BasicBlock *FunctionImpl::createBlock(View name) {
     return blocks().createBefore(nullptr, std::string(name));
+}
+
+FunctionImpl *FunctionDecl::impl() {
+    return static_cast<FunctionImpl*>(TopDecl::impl());
+}
+
+const FunctionImpl *FunctionDecl::impl() const {
+    return static_cast<const FunctionImpl*>(TopDecl::impl());
 }
 
 void FunctionImpl::dump(std::ostream &os) const {

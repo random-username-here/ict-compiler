@@ -82,8 +82,9 @@ class StackPlanner : public Pass
         }
 
         misc::info(TAG) << "Work is being done";
-        for (auto func : mgr->module()->funcImpls())
-            m_function(func);
+        for (auto it : mgr->module()->impls())
+            if (auto func = dynamic_cast<FunctionImpl*>(it))
+                m_function(func);
 
         misc::verb(TAG) << "Resulting IR:\n" << misc::beginBlock << *mgr->module() << misc::endBlock;
     }

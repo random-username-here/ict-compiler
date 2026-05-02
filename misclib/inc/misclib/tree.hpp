@@ -8,6 +8,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -79,6 +80,10 @@ public:
     template<typename T>
     auto replace(UPtr<T> &&v) {
         return this->slot()->replace(std::move(v));
+    }
+
+    auto replace(std::nullptr_t) {
+        return this->slot()->replace(nullptr);
     }
 };
 
@@ -316,7 +321,17 @@ public:
         insertBefore(child, std::move(o_elem));
         return ptr;
     }
+    
+    template<typename El = ElemType>
+    El *insertEnd(UPtr<El> &&e) {
+        return insertBefore(nullptr, std::move(e));
+    }
 
+    template<typename El = ElemType, typename ...Args>
+    El *createEnd(Args &&...args) {
+        return createBefore(nullptr, std::forward<Args>(args)...);
+    }
+    
     UPtr<ElemType> extract(ElemType *child) {
         auto node = static_cast<Node*>(child->slot());
         assert(node->m_list == this);
@@ -403,12 +418,20 @@ public:
     ElemType *operator[](size_t i) { return m_entries[i].get(); }
     const ElemType *operator[](size_t i) const { return m_entries[i].get(); }
 
-    ElemType *push(UPtr<ElemType> &&v) { m_entries.push_back(Entry(std::move(v), this)); return m_entries.back().get(); }
+    template<typename El = ElemType>
+    El *push(UPtr<El> &&v) { m_entries.push_back(Entry(std::move(v), this)); return static_cast<El*>(m_entries.back().get()); }
+
+    template<typename El = ElemType, typename ...Args>
+    El *createEnd(Args &&...args) {
+        return push<El>(std::make_unique<El>(std::forward<Args>(args)...));
+    }
+
     UPtr<ElemType> pop() {
         auto o_elem = m_entries.back().replace(nullptr);
         m_entries.pop_back();
         return o_elem;
     }
+
 
 private:
 
@@ -496,8 +519,8 @@ public:
 template<typename Self, typename ItemType, typename ContType>
 class Item<Self, SlotVector<ContType, ItemType>> : public ItemBase<Self, SlotVector<ContType, ItemType>> {
 public:
-    ContType* parent() { return this->slot()->parent(); }
-    const ContType* parent() const { return this->slot()->parent(); }
+    ContType* parent() { return this->slot() ? this->slot()->parent() : nullptr; }
+    const ContType* parent() const { return this->slot() ? this->slot()->parent() : nullptr; }
 };
 
 namespace detail {

@@ -37,6 +37,7 @@ Manager::Manager(ModManager &mm) :m_mm(mm)
         m_analyzers[i->analysisId()] = i;
     m_passes = mm.allOfType<Pass>();
     l_main_mgr = this;
+    m_module = Module::create();
 }
 
 bool Manager::setTargetArch(View name)
@@ -72,11 +73,11 @@ bool Manager::choseFrontendByFileExt()
     return false;
 }
 
-void Manager::parse()
+bool Manager::parse()
 {
     assert(frontend());
     misc::info(TAG) << "Running frontend " << ACCENT << frontend()->id() << RST << " for language " << ACCENT << frontend()->langName() << RST;
-    m_module = frontend()->compile(this);
+    return frontend()->compile(this, m_module.get());
 }
 void Manager::runAllPasses()
 {

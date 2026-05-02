@@ -1,0 +1,7 @@
+fn puti(i64 v);
+
+fn main() {
+    i64 a = 3;
+    i64 b = 4;
+    puti(a + b);
+}

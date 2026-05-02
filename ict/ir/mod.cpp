@@ -241,13 +241,12 @@ public:
         if (punct.type != ';')
             throw misc::SourceError(punct, "Expected `;` after function decl");
 
-        mod->funcDecls().insertBefore(nullptr, std::move(decl));
+        mod->decls().insertBefore(nullptr, std::move(decl));
     }
 
-    misc::UPtr<ict::Module> compile(ict::Manager *mgr) const override {
+    bool compile(ict::Manager *mgr, ict::Module *mod) const override {
         misc::info(TAG) << "Parsing " << misc::ACCENT << mgr->filename() << misc::RST << '\n';
         View source = mgr->source();
-        auto mod = ict::Module::create(mgr->filename());
         GlobalNameTable gnt;
         try {
             while (1) {
@@ -257,26 +256,26 @@ public:
                 if (tok.type != misc::TOK_NAME)
                     throw misc::SourceError(tok, "Expected a directive");
                 if (tok.view == "func_decl")
-                    declareFunction(mod.get(), source);
+                    declareFunction(mod, source);
                 else if (tok.view == "func_impl")
-                    implementFunction(mod.get(), source);
+                    implementFunction(mod, source);
                 else
                     throw misc::SourceError(tok, "Unknown directive, expected `func_impl` or `func_decl`.");
             }
         } catch (misc::SourceError &e) {
             auto msg = misc::error(TAG);
             e.writeFormatted(msg.stream(), mgr->filename(), mgr->source());
-            return nullptr;
+            return false;
         }
 
         misc::info(TAG) << "Verifying " << misc::ACCENT << mgr->filename() << misc::RST << '\n';
 
         if (mod->verify()) {
             misc::info(TAG) << misc::ACCENT << mgr->filename() << misc::RST << " is good\n";
-            return mod;
+            return true;
         } else {
             misc::error(TAG) << misc::ACCENT << mgr->filename() << misc::RST << " has problems, bailing out\n";
-            return nullptr;
+            return false;
         }
     }
 };

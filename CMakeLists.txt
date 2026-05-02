@@ -9,6 +9,7 @@ add_compile_options(-g)
 
 add_subdirectory(misclib)
 add_subdirectory(modlib)
+
 add_subdirectory(ict/core)
 add_subdirectory(ict/ir)
 #add_subdirectory(ict/analyses/below)
@@ -16,5 +17,7 @@ add_subdirectory(ict/ir)
 add_subdirectory(ict/arch/ivm/backend)
 add_subdirectory(ict/arch/ivm/hl2ll)
 add_subdirectory(ict/arch/ivm/basic-stackplan)
+
+add_subdirectory(scl)
 
 

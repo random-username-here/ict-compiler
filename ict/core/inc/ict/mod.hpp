@@ -61,7 +61,7 @@ class Frontend :
 public:
     virtual View langName() const = 0;
     virtual bool takesFile(View name) const = 0;
-    virtual UPtr<Module> compile(Manager *mgr) const = 0;
+    virtual bool compile(Manager *mgr, Module *into) const = 0;
     virtual ~Frontend() {}
 };
 
@@ -108,7 +108,7 @@ public:
         m_analyses.clear();
     }
 
-    void parse();
+    bool parse();
     void runAllPasses();
     void emit(std::ostream &out);
 

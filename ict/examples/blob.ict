@@ -1,0 +1,13 @@
+///
+/// Data blobs
+/// TODO: support this
+///
+
+decl @shutdown;
+blob_impl @shutdown 0x35 /* cli */ 0x00 /* hlt */; 
+
+func_decl @main () void;
+func_impl @main {
+    Call @shutdown;
+    Ret;
+}
