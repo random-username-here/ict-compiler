@@ -24,11 +24,11 @@ void VarDeclStatement::dump(std::ostream &os) const {
 }
 
 void VarDecl::dump(std::ostream &os) const {
-    os << RED << "VarDecl " << RST << name();
-    if (scopeItem())
-        os << DGRAY << " (in scope as " << GREEN << "ScopeItem " << YELLOW << scopeItem() << DGRAY << ")" << RST;
+    os << RED << "VarDecl " << RST << name() << " ";
+    if (type())
+        os << *type();
     else
-        os << DGRAY << " (not attached to scope)" << RST;
+        os << DGRAY << "(type not known yet)";
 
     if (initExpr())
         os << "\n" << misc::beginBlock << *initExpr() << misc::endBlock;

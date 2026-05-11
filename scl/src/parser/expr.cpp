@@ -12,7 +12,7 @@ static UPtr<Expr> l_maybeMakePack(UPtr<Expr> &&expr) {
     // unpack a long chain, like (a, (b, (c, ...)))
     auto op = dynamic_cast<Binary*>(expr.get());
     if (!op || op->kind() != BIN_COMMA) return std::move(expr);
-    auto pack = ArgPack::create();
+    auto pack = ArgPack::create(op->token()); // TODO: capture all pack inside
     while (1) {
         auto op = dynamic_cast<Binary*>(expr.get());
         if (!op || op->kind() != BIN_COMMA) break;
@@ -27,7 +27,7 @@ UPtr<Expr> parseExprItem(View &source) {
     auto tok = misc::tokenize(source, misc::TOKF_NONE);
     misc::verb(TAG) << "ParseExprItem first token " << (char) tok.type << " `" << tok.view << "`\n";
     if (tok.type == misc::TOK_NUM) {
-        return scl::Number::create(tok.decodeNum());
+        return scl::Number::create(tok);
     } else if (tok.type == misc::TOK_NAME) {
         return scl::Name::create(tok);
     } else if (tok.type == '(') {
@@ -75,6 +75,8 @@ static const OpDef l_ops[] = {
 
     { OT_BIN | OT_LAS, "==", BIN_EQ, 10 },
     { OT_BIN | OT_LAS, "!=", BIN_NEQ, 10 },
+    
+    { OT_BIN | OT_RAS, "=", BIN_ASSIGN, 16 },
 
     { OT_BIN | OT_RAS, ",", BIN_COMMA, 17 }, // right-associative, unlike C++
 };
@@ -88,18 +90,19 @@ static const OpDef *l_findOp(View s, bool unary) {
     return nullptr;
 }
 
-void l_unstackOp(std::vector<UPtr<Expr>> &valStack, std::vector<const OpDef*> &opStack) {
+void l_unstackOp(std::vector<UPtr<Expr>> &valStack, std::vector<const OpDef*> &opStack, std::vector<misc::Token> &opTokStack) {
     auto top = opStack.back();
     misc::verb(TAG) << "Unstack " << top->text << "\n";
     if (top->flags & OT_UNR) {
         auto v = std::move(valStack.back());
         valStack.pop_back();
-        valStack.push_back(Unary::create((UnaryKind) top->type, std::move(v)));
+        valStack.push_back(Unary::create(opTokStack.back(), (UnaryKind) top->type, std::move(v)));
     } else {
         auto b = std::move(valStack.back()); valStack.pop_back();
         auto a = std::move(valStack.back()); valStack.pop_back();
-        valStack.push_back(Binary::create((BinaryKind) top->type, std::move(a), std::move(b)));
+        valStack.push_back(Binary::create(opTokStack.back(), (BinaryKind) top->type, std::move(a), std::move(b)));
     }
+    opTokStack.pop_back();
     opStack.pop_back();
 }
 
@@ -112,6 +115,7 @@ static bool l_initListHas(std::initializer_list<misc::TokenType> il, misc::Token
 UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> terminal) {
     std::vector<UPtr<Expr>> valStack;
     std::vector<const OpDef*> opStack;
+    std::vector<misc::Token> opTokStack;
 
     misc::Token tok;
     View pos = misc::tokenize(source, misc::TOKF_NONE, &tok);
@@ -126,13 +130,16 @@ UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> termin
             while (!opStack.empty() && (
                         opStack.back()->prior < def->prior 
                         || (opStack.back()->prior < def->prior && (def->flags & OT_LAS)))) {
-                l_unstackOp(valStack, opStack);
+                l_unstackOp(valStack, opStack, opTokStack);
             }
+            opTokStack.push_back(tok);
             opStack.push_back(def);
             unaryExpected = true;
         } else {
-            if (!unaryExpected)
+            if (!unaryExpected) {
                 opStack.push_back(&l_spaceOp);
+                opTokStack.push_back(tok); // obrace or argument
+            }
             valStack.push_back(parseExprItem(source));
             unaryExpected = false;
         }
@@ -141,7 +148,8 @@ UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> termin
     if (unaryExpected)
         throw misc::SourceError(tok, "Value expected afterwards");
     while (!opStack.empty())
-        l_unstackOp(valStack, opStack);
+        l_unstackOp(valStack, opStack, opTokStack);
+    misc::verb(TAG) << "ParseExpr end, vs has " << valStack.size() << " items\n";
     return valStack.empty() ? nullptr : std::move(valStack[0]);
 }
 

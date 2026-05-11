@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstdint>
 #include <ostream>
+#include <unordered_map>
 #include <utility>
 
 namespace ict {
@@ -36,7 +37,7 @@ class Arg;          ///< Any argument of operator
 class VRegArg;      ///< Argument pointing to virtual register
 class ConstArg;     ///< Argument with constant integer value
 class BlockArg;     ///< Argument pointing to some block
-class FuncArg;      ///< Argument pointing to some function
+class GlobalArg;      ///< Argument pointing to some function
 class ArgArg;       ///< Argument pointing to function's argument
 
 class Type;         ///< Some IR type 
@@ -44,6 +45,39 @@ class SimpleType;   ///< Basic types -- ints, pointers (they are type-less), ...
 class ArrayType;    ///< Fixed-size array
 
 using Integer = int64_t;
+
+struct Tag {
+    std::string name;
+    Tag(View v) :name(v) {}
+    Tag(const char *t) :name(t) {}
+};
+
+/**
+ * Something which has tags -- attributes like !volatile or !donttouch.
+ */
+class Tagged
+{
+public:
+    
+private:
+    std::vector<Tag> m_tags;
+public:
+    auto &tags() const { return m_tags; }
+    void addTag(Tag t) { m_tags.push_back(t); }
+    Tag *tag(View name) {
+        for (auto &i : m_tags)
+            if (i.name == name) return &i;
+        return nullptr;
+    }
+    const Tag *tag(View name) const {
+        for (const auto &i : m_tags)
+            if (i.name == name) return &i;
+        return nullptr;
+    }
+    bool hasTag(View name) const { return tag(name) != nullptr; }
+};
+
+std::ostream &operator<<(std::ostream &os, const std::vector<Tag> &tags);
 
 /**
  * Module -- one compiled file.
@@ -89,7 +123,8 @@ public:
  */
 class TopDecl :
         public MISC_ITEM_IN(TopDecl, &Module::decls),
-        public Refable<FuncArg>
+        public Refable<GlobalArg>,
+        public Tagged
 {
     friend class TopImpl;
     TopImpl *m_impl = nullptr;
@@ -108,7 +143,8 @@ public:
 };
 
 class TopImpl :
-        public MISC_ITEM_IN(TopImpl, &Module::impls)
+        public MISC_ITEM_IN(TopImpl, &Module::impls),
+        public Tagged
 {
     TopDecl *m_decl = nullptr;
 public:
@@ -163,7 +199,8 @@ public:
 
 class ArgDecl :
         public MISC_ITEM_IN(ArgDecl, &FunctionDecl::args),
-        public Refable<ArgArg>
+        public Refable<ArgArg>,
+        public Tagged
 {
 
     std::string m_name;
@@ -184,17 +221,31 @@ public:
 };
 
 /**
+ * Some analyzer's thoughts about function.
+ */
+class Analysis {
+public:
+    virtual ~Analysis() {}
+};
+
+/**
  * Function implementation, must be attached to some declaration.
  */
 class FunctionImpl :
         public TopImpl
 {
     misc::SlotList<FunctionImpl, BasicBlock> m_blocks;
+    // this is horrible, and I know this
+    // But when we print, we require print methods to be const...
+    // ... and want numbering.
+    mutable std::unordered_map<size_t, UPtr<Analysis>> m_cachedAnalyses;
+
+    UPtr<Analysis> m_runAnalyzerById(size_t id) const;
+
 public:
 
-    FunctionImpl(FunctionDecl *decl) :TopImpl(decl), m_blocks(this) {
-        assert(decl);
-    }
+    FunctionImpl(FunctionDecl *decl) :TopImpl(decl), m_blocks(this) { assert(decl); }
+    MISC_CREATEFUNC(FunctionImpl);
     
     BasicBlock *createBlock(View name = "");
 
@@ -205,7 +256,26 @@ public:
     const auto &blocks() const { return m_blocks; }
 
     void dump(std::ostream &os) const override;
-    MISC_CREATEFUNC(FunctionImpl);
+
+    template<typename T>
+    T *analysis() {
+        auto id = typeid(T).hash_code();
+        if (m_cachedAnalyses.count(id) == 0)
+            m_cachedAnalyses[id] = m_runAnalyzerById(id);
+        return static_cast<T*>(m_cachedAnalyses.at(id).get());
+    }
+
+    template<typename T>
+    const T *analysis() const {
+        auto id = typeid(T).hash_code();
+        if (m_cachedAnalyses.count(id) == 0)
+            m_cachedAnalyses[id] = m_runAnalyzerById(id);
+        return static_cast<const T*>(m_cachedAnalyses.at(id).get());
+    }
+
+    void invalidateAnalysis() {
+        m_cachedAnalyses.clear();
+    }
 };
 
 /**
@@ -214,7 +284,8 @@ public:
  */
 class BasicBlock :
         public Refable<BlockArg>,
-        public MISC_ITEM_IN(BasicBlock, &FunctionImpl::blocks)
+        public MISC_ITEM_IN(BasicBlock, &FunctionImpl::blocks),
+        public Tagged
 {
     std::string m_name;
     misc::SlotList<BasicBlock, Operation> m_operations;
@@ -257,7 +328,8 @@ ICT_FOR_ALL_OPS(X)
  */
 class Operation :
         public Refable<VRegArg>,
-        public MISC_ITEM_IN(Operation, &BasicBlock::operations)
+        public MISC_ITEM_IN(Operation, &BasicBlock::operations),
+        public Tagged
 {
     int m_kind = 0;
     misc::SlotVector<Operation, Arg> m_args;
@@ -269,7 +341,7 @@ class Operation :
     UPtr<ConstArg> l_mapToArg(Integer i);
     UPtr<VRegArg>  l_mapToArg(Operation *o);
     UPtr<BlockArg> l_mapToArg(BasicBlock *b);
-    UPtr<FuncArg>  l_mapToArg(FunctionDecl *f);
+    UPtr<GlobalArg> l_mapToArg(TopDecl *f);
     UPtr<ArgArg>   l_mapToArg(ArgDecl *a);
 
     UPtr<Type> l_createRt();
@@ -295,6 +367,8 @@ public:
         m_args(this, l_mapToArg(std::forward<Args>(args))...),
         m_retType(this, l_createRt())
     {}
+    
+    Operation *addTag(Tag t) { Tagged::addTag(t); return this; }
  
     int kind() const { return m_kind; }
     void setKind(int kind) { m_kind = kind; }
@@ -314,14 +388,14 @@ public:
     VRegArg     *arg_v(size_t i);
     ConstArg    *arg_c(size_t i);
     BlockArg    *arg_b(size_t i);
-    FuncArg     *arg_f(size_t i);
+    GlobalArg   *arg_g(size_t i);
     ArgArg      *arg_a(size_t i);
 
     const Arg         *arg(size_t i) const { return m_args.at(i); }
     const VRegArg     *arg_v(size_t i) const;
     const ConstArg    *arg_c(size_t i) const;
     const BlockArg    *arg_b(size_t i) const;
-    const FuncArg     *arg_f(size_t i) const;
+    const GlobalArg   *arg_g(size_t i) const;
     const ArgArg      *arg_a(size_t i) const;
 
     /** Is this operation from low-level IR? */
@@ -333,6 +407,11 @@ public:
      * this is somewhat a hack to make getting predecessors/successors easier.
      */
     bool isTerminal() const;
+
+    /**
+     * Can this operation be safely deleted/moved around?
+     */
+    bool hasSideEffects() const;
 
     bool requiresExplicitType() const;
 
@@ -391,14 +470,14 @@ public:
     MISC_CREATEFUNC(BlockArg);
 };
 
-class FuncArg :
+class GlobalArg :
         public Arg,
-        public Ref<FuncArg, FunctionDecl>
+        public Ref<GlobalArg, TopDecl>
 {
 public:
     using Ref::Ref;
     void dump(std::ostream &os) const override;
-    MISC_CREATEFUNC(FuncArg);
+    MISC_CREATEFUNC(GlobalArg);
 };
 
 class ArgArg :

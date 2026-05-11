@@ -6,7 +6,7 @@ func_decl @main () void;
 
 func_impl @main {
 %start:
-    %cond       Const 1;
+    %cond       Const[i8] 1;
                 Bc %cond %then %else;
 %then:
                 DebugPrint 1;

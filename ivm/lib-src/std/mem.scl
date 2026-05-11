@@ -1,0 +1,32 @@
+include "std/mem.sch";
+
+type chunk struct {
+    free bool;
+    prev *chunk;
+    size size;
+}
+
+var HEAP_START_ADDR const *chunk = 0x1000;
+var HEAP_SIZE       const size   = 0xD000;
+
+func mem_init() {
+    HEAP_START_ADDR.free = true;
+    HEAP_START_ADDR.prev = NULL;
+    HEAP_START_ADDR.size = HEAP_SIZE - HEAP_START_ADDR as size;
+}
+
+func mem_alloc(count size) *void {
+    // TODO    
+}
+
+func mem_free(chunk *void) {
+    // TODO
+}
+
+func mem_size(chunk *void) {
+    // TODO
+}
+
+func mem_cpy(dest *void, src *void, n size) {
+    while (n--) *(dest++) = *(src++);
+}

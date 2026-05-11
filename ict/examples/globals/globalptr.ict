@@ -1,0 +1,13 @@
+///
+/// Obtain pointer to something global
+///
+
+func_decl @something () void;
+
+func_decl @main () void;
+
+func_impl @main {
+    %ptr    GlobalPtr @something;
+            DebugPrint %ptr;
+            Ret;
+}

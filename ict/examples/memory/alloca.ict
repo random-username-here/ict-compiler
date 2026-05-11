@@ -6,8 +6,7 @@ func_decl @main () void;
 
 func_impl @main {
     %addr       Alloca[i64];
-    %val        Const 42;
-                Store[i64] %addr %val;
+                Store[i64] %addr 42;
     %read       Load[i64] %addr;
                 DebugPrint %read;
                 Ret;

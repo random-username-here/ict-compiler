@@ -32,6 +32,20 @@ public:
     using BlockNameTable = std::unordered_map<View, ict::BasicBlock*>;
     using VRegNameTable = std::unordered_map<View, ict::Operation*>;
 
+    void eatTags(View &source, ict::Tagged *to) const {
+    another:
+        misc::Token tok;
+        View v = misc::tokenize(source, misc::TOKF_DOTNAME, &tok);
+        if (tok.type != misc::TOK_OP || tok.view != "!")
+            return;
+        source = v;
+        auto name = misc::tokenize(source, misc::TOKF_DOTNAME);
+        if (name.type != misc::TOK_NAME)
+            throw misc::SourceError(name, "Expected tag name after `!`");
+        to->addTag(ict::Tag(name.view));
+        goto another;
+    }
+
     UPtr<ict::Type> parseType(ict::Module *mod, View &source) const {
         auto name = misc::tokenize(source, misc::TOKF_DOTNAME);
         if (name.type != misc::TOK_NAME)
@@ -70,6 +84,7 @@ public:
         auto op = ict::Operation::create();
         op->setKind(kind);
         op->tparam() = std::move(type);
+        eatTags(source, op.get());
         return op;
     }
 
@@ -106,7 +121,7 @@ public:
                     auto func = op->parent()->parent()->parent()->findFunc(tok.view.substr(1));
                     if (!func)
                         throw misc::SourceError(tok, "Unknown function");
-                    op->args().push(ict::FuncArg::create(func));
+                    op->args().push(ict::GlobalArg::create(func));
                 } else if (tok.view[0] == '%') {
                     auto name = tok.view.substr(1);
                     if (bnt.count(name)) {
@@ -141,15 +156,17 @@ public:
 
         auto decl = mod->findFunc(name.view.substr(1));
         if (!decl)
-            throw misc::SourceError(name, "Function not declred before implementation");
+            throw misc::SourceError(name, "Function not declared before implementation");
         if (decl->impl())
             throw misc::SourceError(name, "This is a second implementation of this function");
+
+        auto func = decl->implement();
+        eatTags(source, func);
 
         auto bracket = misc::tokenize(source, misc::TOKF_DOTNAME);
         if (bracket.type != '{')
             throw misc::SourceError(bracket, "Expected `{` to open function impl");
 
-        auto func = decl->implement();
         auto block = func->createBlock("");
         bool hadSomething = false;
 
@@ -174,6 +191,7 @@ public:
                     if (hadSomething)
                         block = func->createBlock("");
                     block->setName(tok.view.substr(1));
+                    eatTags(source, block);
                     bnt[block->name()] = block;
                 } else if (second.type == misc::TOK_NAME && isalpha(second.view[0])) {
                     // operation which returns `%res Add ...`
@@ -228,7 +246,8 @@ public:
                 source = ns;
                 break;
             }
-            decl->args().push(ict::ArgDecl::create(parseType(mod, source), name));
+            auto arg = decl->args().createEnd(parseType(mod, source), name);
+            eatTags(source, arg);
             punct = misc::tokenize(source, misc::TOKF_DOTNAME);
             if (punct.type == misc::TOK_EOF)
                 throw misc::SourceError(punct, "Argument list not closed");
@@ -237,6 +256,8 @@ public:
         }
 
         decl->retType().replace(parseType(mod, source));
+        eatTags(source, decl.get());
+
         punct = misc::tokenize(source, misc::TOKF_DOTNAME);
         if (punct.type != ';')
             throw misc::SourceError(punct, "Expected `;` after function decl");

@@ -54,8 +54,10 @@ bool checkMathOps(const Operation *op) {
 
     bool ok = true;
     for (size_t i = 0; i < 2; ++i) {
+        if (op->arg_c(i))
+            continue;
         if (!op->arg_v(i)) {
-            misc::error(TAG) << opId(op) << "'s " << (i+1) << " argument must be vreg";
+            misc::error(TAG) << opId(op) << "'s " << (i+1) << " argument must be vreg or constant";
             ok = false;
             continue;
         }

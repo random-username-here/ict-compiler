@@ -6,6 +6,7 @@
  */
 
 #include "ict/mod.hpp"
+#include "ict/analyses/numbering.hpp"
 #include "ict/arch/ivm.hpp"
 #include "ict/ir.hpp"
 #include "misclib/dump_stream.hpp"
@@ -40,17 +41,20 @@ class StackPlanner : public Pass
 
         std::unordered_map<Operation*, Integer> off;
         Integer curPos = 0;
-        
-        m_forEachOpOfType(func, IVM_FROMSTACK, [&off, &curPos](Operation *op){
+       
+        auto num = func->analysis<an::Numbering>();
+
+        m_forEachOpOfType(func, IVM_FROMSTACK, [&off, &curPos, num](Operation *op){
             curPos -= 8;
             off[op] = curPos;
-            misc::verb(TAG) << "    Var " << ACCENT << "%" << op << RST << " @ " << op << " -> slot " << ACCENT << curPos << RST;
+            misc::verb(TAG) << "    Var " << ACCENT << "%" << num->get(op) << RST << " @ " << op << " -> slot " << ACCENT << curPos << RST;
         });
 
         m_forEachOpOfType(func, IVM_TOSTACK, [&off](Operation *op){
             auto to = op->arg_v(0)->ptr();
             assert(off.count(to) != 0);
-            op->parentList()->createBefore(op, IVM_R_SFLOAD64, nullptr, off.at(to));
+            auto load = op->parentList()->createBefore(op, IVM_R_SFLOAD64, nullptr, off.at(to));
+            op->replaceRefsWith(load);
             op->extractSelf();
         });
 
@@ -72,6 +76,7 @@ class StackPlanner : public Pass
             abort();
         }
         block->operations().createAfter(sfbegin, IVM_R_SADD, nullptr, curPos);
+        func->invalidateAnalysis();
     }
 
     void run(Manager *mgr) const override
@@ -81,12 +86,10 @@ class StackPlanner : public Pass
             return;
         }
 
-        misc::info(TAG) << "Work is being done";
+        misc::info(TAG) << "Stack planner running...";
         for (auto it : mgr->module()->impls())
             if (auto func = dynamic_cast<FunctionImpl*>(it))
                 m_function(func);
-
-        misc::verb(TAG) << "Resulting IR:\n" << misc::beginBlock << *mgr->module() << misc::endBlock;
     }
 };
 

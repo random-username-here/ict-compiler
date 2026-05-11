@@ -13,7 +13,6 @@ func_impl @func {
 }
 
 func_impl @main {
-    %val Const 67;
-    Call @func %val;
+    Call @func 67;
     Ret;
 }

@@ -40,14 +40,18 @@ ict::View unKind2str(UnaryKind k) {
 }
 
 void Binary::dump(std::ostream &os) const {
-    os << BLUE << "Binary" << PURPLE << " " << binKind2str(kind()) << RST << "\n" 
+    os << BLUE << "Binary" << PURPLE << " " << binKind2str(kind()) << RST;
+    if (type()) os << DGRAY << " -> " << RST << *type();
+    os  << "\n" 
         << misc::beginBlock<< DGRAY << "l: " << RST << *left()
         << DGRAY << "r: " << RST << *right()
         << misc::endBlock;
 }
 
 void Unary::dump(std::ostream &os) const {
-    os << BLUE << "Unary" << PURPLE << " " << unKind2str(kind()) << RST << "\n"
+    os << BLUE << "Unary" << PURPLE << " " << unKind2str(kind()) << RST;
+    if (type()) os << DGRAY << " -> " << RST << *type();
+    os << "\n"
         << misc::beginBlock << *val() << misc::endBlock;
 }
 
@@ -57,9 +61,14 @@ void Number::dump(std::ostream &os) const {
 
 void Name::dump(std::ostream &os) const {
     os << BLUE << "Name" << RST << " " << name() << DGRAY;
-    if (scopeItem())
-        os << DGRAY << " (resolved to " << GREEN << "ScopeItem " << YELLOW << scopeItem() << DGRAY << ")\n" << RST;
-    else
+    if (decl()) { // TODO: brief 
+        os << DGRAY << " (resolved to " << RST << decl()->name();
+        if (decl()->type())
+            os << " " << *decl()->type();
+        else
+            os << DGRAY << " (type not known yet)";
+        os << DGRAY << ")\n" << RST;
+    } else
         os << DGRAY << " (not resolved yet)\n" << RST;
 }
 

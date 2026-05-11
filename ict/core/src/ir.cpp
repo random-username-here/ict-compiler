@@ -1,13 +1,25 @@
 #include "ict/ir.hpp"
 #include "ict/ir-macro.hpp"
 #include "ict/mod.hpp"
+#include "ict/analyses/numbering.hpp"
 #include "misclib/dump_stream.hpp"
 #include <cassert>
+#include <cstdint>
 #include <ostream>
 
 using namespace misc::color;
 
 namespace ict {
+
+std::ostream &operator<<(std::ostream &os, const std::vector<Tag> &tags) {
+    os << YELLOW;
+    for (size_t i = 0; i < tags.size(); ++i) {
+        os << " !" << tags[i].name;
+    }
+    os << RST;
+    return os;
+}
+
 FunctionDecl *Module::findFunc(View name) {
     for (auto i : decls())
         if (i->name() == name)
@@ -27,7 +39,7 @@ void Module::dump(std::ostream &os) const {
 }
 
 void TopDecl::dump(std::ostream &os) const {
-    os << PURPLE << "decl " << RST << BOLD << "@" << name() << RST << DGRAY << ";\n" << RST;
+    os << PURPLE << "decl " << RST << BOLD << "@" << name() << RST << tags() << DGRAY << ";\n" << RST;
 }
 
 UPtr<ArgDecl> FunctionDecl::l_toArg(UPtr<Type> &&t) {
@@ -47,7 +59,7 @@ void FunctionDecl::dump(std::ostream &os) const {
     }
     os << DGRAY << ") " << RST;
     retType()->dump(os);
-    os << DGRAY << ";";
+    os << tags() << DGRAY << ";";
     if (!impl())
         os << " // decl-only";
     os << RST << "\n";
@@ -56,7 +68,7 @@ void FunctionDecl::dump(std::ostream &os) const {
 void ArgDecl::dump(std::ostream &os) const {
     if (!name().empty())
         os << RED << "%" << name() << " " << RST;
-    os << *type();
+    os << *type() << tags();
 }
 
 BasicBlock *FunctionImpl::createBlock(View name) {
@@ -73,10 +85,14 @@ const FunctionImpl *FunctionDecl::impl() const {
 
 void FunctionImpl::dump(std::ostream &os) const {
     os << PURPLE << "func_impl " << RST << BOLD << "@" << decl()->name() << RST
-        << DGRAY << " {\n" << RST << misc::beginBlock;
+        << tags() << DGRAY << " {\n" << RST << misc::beginBlock;
     for (auto blk : blocks())
         blk->dump(os);
     os << misc::endBlock << DGRAY << "}\n" << RST;
+}
+
+UPtr<Analysis> FunctionImpl::m_runAnalyzerById(size_t id) const {
+    return Manager::main()->runAnalyzer(id, this);
 }
 
 std::vector<const BasicBlock*> BasicBlock::predecessors() const {
@@ -122,13 +138,17 @@ std::vector<BasicBlock*> BasicBlock::successors() {
 void BasicBlock::dump(std::ostream &os) const {
     os << GREEN << "%";
     if (!name().empty()) os << name();
+    else if (parent() && parent()->analysis<an::Numbering>())
+        os << parent()->analysis<an::Numbering>()->get(this);
     else os << this;
-    os << DGRAY << ": // preds = ";
+    os << DGRAY << ":" << RST << tags() << DGRAY << " // preds = ";
     auto preds = predecessors();
     if (preds.empty()) os << "(none)";
     for (auto i : preds) {
         os << "%";
         if (!i->name().empty()) os << i->name();
+        else if (parent() && parent()->analysis<an::Numbering>())
+            os << parent()->analysis<an::Numbering>()->get(i);
         else os << i;
         os << " ";
     }
@@ -150,9 +170,22 @@ UPtr<Type> Operation::l_createRt() {
             return Type::void_t();
         case OP_ALLOCA:
         case OP_ARGPTR:
+        case OP_GLOBALPTR:
             return Type::ptr_t();
         case OP_CALL:
-            return arg_f(0)->ptr()->retType()->clone();
+            if (tparam().get()) return tparam()->clone();
+            if (arg_v(0) && arg_v(0)->ptr()->kind() == OP_GLOBALPTR) {
+                if (auto func = dynamic_cast<FunctionDecl*>(arg_v(0)->ptr()->arg_g(0)->ptr()))
+                    return func->retType()->clone();
+                else
+                    misc::error("ict.ir") << "Call of GlobalPtr which points to non-function" << *this;
+            }
+            if (!arg_g(0))
+                misc::error("ict.ir") << "Cannot determine return type of function called in " << *this;
+            if (auto func = dynamic_cast<FunctionDecl*>(arg_g(0)->ptr()))
+                return func->retType()->clone();
+            else
+                misc::error("ict.ir") << "Call must call a function declaration: " << *this;
         case OP_CONST: 
         case OP_LOAD:
             return tparam().get() ? tparam()->clone() : Type::i64_t();
@@ -175,20 +208,33 @@ UPtr<Type> Operation::l_createRt() {
 UPtr<ConstArg> Operation::l_mapToArg(Integer i) { return ConstArg::create(i); }
 UPtr<VRegArg>  Operation::l_mapToArg(Operation *o) { return VRegArg::create(o); }
 UPtr<BlockArg> Operation::l_mapToArg(BasicBlock *b) { return BlockArg::create(b); }
-UPtr<FuncArg>  Operation::l_mapToArg(FunctionDecl *f) { return FuncArg::create(f); }
+UPtr<GlobalArg>  Operation::l_mapToArg(TopDecl *f) { return GlobalArg::create(f); }
 UPtr<ArgArg>   Operation::l_mapToArg(ArgDecl *a) { return ArgArg::create(a); }
 
 VRegArg     *Operation::arg_v(size_t i) { return dynamic_cast<VRegArg*>(arg(i)); }
 ConstArg    *Operation::arg_c(size_t i) { return dynamic_cast<ConstArg*>(arg(i)); }
 BlockArg    *Operation::arg_b(size_t i) { return dynamic_cast<BlockArg*>(arg(i)); }
-FuncArg     *Operation::arg_f(size_t i) { return dynamic_cast<FuncArg*>(arg(i)); }
+GlobalArg     *Operation::arg_g(size_t i) { return dynamic_cast<GlobalArg*>(arg(i)); }
 ArgArg      *Operation::arg_a(size_t i) { return dynamic_cast<ArgArg*>(arg(i)); }
 
 const VRegArg     *Operation::arg_v(size_t i) const { return dynamic_cast<const VRegArg*>(arg(i)); }
 const ConstArg    *Operation::arg_c(size_t i) const { return dynamic_cast<const ConstArg*>(arg(i)); }
 const BlockArg    *Operation::arg_b(size_t i) const { return dynamic_cast<const BlockArg*>(arg(i)); }
-const FuncArg     *Operation::arg_f(size_t i) const { return dynamic_cast<const FuncArg*>(arg(i)); }
+const GlobalArg     *Operation::arg_g(size_t i) const { return dynamic_cast<const GlobalArg*>(arg(i)); }
 const ArgArg      *Operation::arg_a(size_t i) const { return dynamic_cast<const ArgArg*>(arg(i)); }
+
+bool Operation::hasSideEffects() const {
+    if (isLowLevel())
+        return Manager::main()->backend()->lowOpHasSideEffects(kind());
+    switch (kind()) {
+        case OP_LOAD: case OP_STORE: case OP_CALL:
+        case OP_DEBUG_PRINT:
+            // alloca is not here because we can reorder it as we want
+            return true;
+        default:
+            return false;
+    }
+}
 
 bool Operation::isTerminal() const {
 #define X(id, term, expl, name, textname) if (kind() == id) return term;
@@ -225,6 +271,8 @@ void Operation::dump(std::ostream &os) const {
     if (!returnType()->isVoid()) {
         os << BLUE << "%";
         if (!vregName().empty()) os << vregName();
+        else if (parent() && parent()->parent() && parent()->parent()->analysis<an::Numbering>())
+            os << parent()->parent()->analysis<an::Numbering>()->get(this);
         else os << this;
         os << " " << RST;
     }
@@ -238,9 +286,21 @@ void Operation::dump(std::ostream &os) const {
         }
         os << DGRAY << "]" << RST;
     }
+    os << tags();
     for (auto arg : args())
         os << " " << *arg;
-    os << '\n';
+    os << DGRAY << ";\n" << RST;
+}
+
+static void l_num(const Arg *self, const void *v, std::ostream &os) {
+    if (!self->parent() || !self->parent()->parent() || !self->parent()->parent()->parent())
+        goto no;
+    if (auto an = self->parent()->parent()->parent()->analysis<an::Numbering>()) {
+        os << an->get(v);
+        return;
+    }
+no:
+    os << v;
 }
 
 void Operation::replaceRefsWith(Operation *op) {
@@ -254,29 +314,29 @@ void ConstArg::dump(std::ostream &os) const {
 
 void VRegArg::dump(std::ostream &os) const {
     os << BLUE << "%";
-    if (ptr()->vregName().empty()) os << ptr();
-    else os << ptr()->vregName();
+    if (!ptr()->vregName().empty()) os << ptr()->vregName();
+    else l_num(this, ptr(), os);
     os << RST;
 }
 
 void BlockArg::dump(std::ostream &os) const {
     os << GREEN << "%";
-    if (ptr()->name().empty()) os << ptr();
-    else os << ptr()->name();
+    if (!ptr()->name().empty()) os << ptr()->name();
+    else l_num(this, ptr(), os);
     os << RST;
 }
 
-void FuncArg::dump(std::ostream &os) const {
+void GlobalArg::dump(std::ostream &os) const {
     os << BOLD << "@";
-    if (ptr()->name().empty()) os << ptr();
-    else os << ptr()->name();
+    if (!ptr()->name().empty()) os << ptr()->name();
+    else l_num(this, ptr(), os);
     os << RST;
 }
 
 void ArgArg::dump(std::ostream &os) const {
     os << RED << "%";
-    if (ptr()->name().empty()) os << ptr();
-    else os << ptr()->name();
+    if (!ptr()->name().empty()) os << ptr()->name();
+    else l_num(this, ptr(), os);
     os << RST;
 }
 

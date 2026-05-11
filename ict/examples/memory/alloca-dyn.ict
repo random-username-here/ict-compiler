@@ -1,0 +1,11 @@
+///
+/// Allocating dynamic amount of untyped stack space
+/// (for arrays, structures, ...)
+/// TODO: support for more complex structures should be added to ict
+///
+
+func_decl @main () void;
+func_impl @main {
+    %addr       Alloca 128;
+                Ret;
+}

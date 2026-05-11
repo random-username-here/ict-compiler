@@ -6,8 +6,7 @@ func_decl @func() i64;
 func_decl @main() void;
 
 func_impl @func {
-    %x Const 123;
-    Ret %x;
+    Ret 123;
 }
 
 func_impl @main {

@@ -1,0 +1,12 @@
+///
+/// Adding tags to everything.
+/// This example shows all posible tag placements.
+///
+
+func_decl @main(%x i64 !arg, %y i8 !another_arg) i64 !function_declaration;
+
+func_impl @main !function_implementation {
+%start: !the_block
+    %x      Const !an_operation 3;
+            Ret 0;
+}

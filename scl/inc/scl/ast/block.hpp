@@ -1,9 +1,10 @@
 #pragma once
 #include "misclib/defs.hpp"
+#include "misclib/parse.hpp"
 #include "misclib/tree.hpp"
 #include "scl/ast/expr.hpp"
 #include "scl/ast/basic.hpp"
-#include "scl/scope.hpp"
+#include "scl/ast/type.hpp"
 #include <ostream>
 
 namespace scl {
@@ -13,8 +14,9 @@ class Statement; // something inside block
 class ExprInBlock; // raw expression in block
 class VarDecl; // variable declaration
 
-class Statement : public misc::Item<Statement, misc::SlotVector<Block, Statement>> {
+class Statement : public misc::Item<Statement, misc::SlotVector<Block, Statement>>, public misc::WithToken {
 public:
+    Statement(misc::Token tok) :WithToken(tok) {}
     virtual void dump(std::ostream &os) const = 0;
 };
 
@@ -23,7 +25,7 @@ class Block : public misc::Item<Block>, public Statement {
     misc::SlotVector<Block, Statement> m_items;
 public:
 
-    Block() :m_items(this) {}
+    Block(misc::Token tok) :Statement(tok), m_items(this) {}
     MISC_CREATEFUNC(Block);
 
     auto &items() { return m_items; }
@@ -35,7 +37,7 @@ public:
 class ExprInBlock : public Statement {
     misc::Slot<ExprInBlock, Expr> m_expr;
 public:
-    ExprInBlock(misc::UPtr<Expr> &&e) :m_expr(this, std::move(e)) {}
+    ExprInBlock(misc::Token tok, misc::UPtr<Expr> &&e) :Statement(tok), m_expr(this, std::move(e)) {}
     MISC_CREATEFUNC(ExprInBlock);
 
     auto &expr() { return m_expr; }
@@ -47,7 +49,7 @@ public:
 class VarDeclStatement : public Statement {
     misc::SlotVector<VarDeclStatement, VarDecl> m_decls;
 public:
-    VarDeclStatement() :m_decls(this) {}
+    VarDeclStatement(misc::Token tok) :Statement(tok), m_decls(this) {}
     MISC_CREATEFUNC(VarDeclStatement);
 
     auto &decls() { return m_decls; }
@@ -56,17 +58,12 @@ public:
 };
 
 /** Single variable declaration */
-class VarDecl : public MISC_ITEM_IN(VarDecl, &VarDeclStatement::decls), public Decl {
+class VarDecl : public MISC_ITEM_IN(VarDecl, &VarDeclStatement::decls), public LocalDecl {
     misc::Slot<VarDecl, Expr> m_initExpr;
-    ScopeItem *m_item = nullptr;
 public:
-    VarDecl(misc::View name) :m_initExpr(this), Decl(name) {}
-    VarDecl(misc::View name, UPtr<Expr> &&init) :m_initExpr(this, std::move(init)), Decl(name) {}
+    VarDecl(misc::Token name, UPtr<Type> &&type, UPtr<Expr> &&init) 
+        :m_initExpr(this, std::move(init)), LocalDecl(name, std::move(type)) {}
     MISC_CREATEFUNC(VarDecl);
-
-    ScopeItem *scopeItem() { return m_item; }
-    const ScopeItem *scopeItem() const { return m_item; }
-    void setScopeItem(ScopeItem *it) { m_item = it; }
 
     auto &initExpr() { return m_initExpr; }
     auto &initExpr() const { return m_initExpr; }
@@ -78,8 +75,8 @@ class IfElse : public Statement {
     misc::Slot<IfElse, Statement> m_then;
     misc::Slot<IfElse, Statement> m_otherwise;
 public:
-    IfElse(UPtr<Expr> &&cond, UPtr<Statement> &&then, UPtr<Statement> &&otherwise)
-        :m_cond(this, std::move(cond)), m_then(this, std::move(then)), m_otherwise(this, std::move(otherwise)) {}
+    IfElse(misc::Token tok, UPtr<Expr> &&cond, UPtr<Statement> &&then, UPtr<Statement> &&otherwise)
+        :Statement(tok), m_cond(this, std::move(cond)), m_then(this, std::move(then)), m_otherwise(this, std::move(otherwise)) {}
     MISC_CREATEFUNC(IfElse);
 
     auto &cond() { return m_cond; }

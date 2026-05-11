@@ -16,11 +16,12 @@
     X(0x00, false,  false,  UNKNOWN_OP,     "?")\
     X(0x01, false,  false,  CONST,          "Const") /* type defaults to i64 */\
     X(0x02, true,   false,  RET,            "Ret")\
-    X(0x03, false,  true,   ALLOCA,         "Alloca")\
+    X(0x03, false,  false,  ALLOCA,         "Alloca")\
     X(0x04, false,  true,   LOAD,           "Load")\
     X(0x05, false,  true,   STORE,          "Store")\
     X(0x06, false,  false,  CALL,           "Call")\
     X(0x07, false,  false,  ARGPTR,         "ArgPtr")\
+    X(0x08, false,  false,  GLOBALPTR,      "GlobalPtr")\
     \
     X(0x10, false,  false,  ADD,            "Add")\
     X(0x11, false,  false,  SUB,            "Sub")\

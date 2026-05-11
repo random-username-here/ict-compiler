@@ -1,4 +1,5 @@
 #include "ict/mod.hpp"
+#include "ict/ir.hpp"
 #include "misclib/parse.hpp"
 #include "modlib_mod.hpp"
 #include "misclib/dump_stream.hpp"
@@ -27,19 +28,21 @@ public:
         misc::info(TAG) << "Parsing " << misc::ACCENT << mgr->filename() << misc::RST << '\n';
         View source = mgr->source();
         try {
-            auto decl = into->findOrDeclareFunc("expr_demo", ict::Type::void_t());
-            auto impl = decl->implement();
-            auto first = impl->createBlock("start");
-            scl::IRGenCtx ctx = { .curBlock = first };
-
-            auto ast = scl::parseStatement(source);
-            misc::info(TAG) << "Parsed expr:\n" << misc::beginBlock << *ast << misc::endBlock;
-            scl::Scope top;
-            scl::resolveScopes(ast.get(), &top);
-            misc::info(TAG) << "Resolved scopes:\n" << misc::beginBlock << *ast << misc::endBlock;
-            scl::irStmnt(&ctx, ast.get());
-            misc::info(TAG) << "IR generated!";
-            return true;
+            auto mod = scl::Module::create();
+            misc::info(TAG) << "Parsing module...";
+            while (scl::parseTopLevel(source, mod.get()));
+            misc::info(TAG) << "Parsed module:\n" << misc::beginBlock << *mod << misc::endBlock;
+            misc::info(TAG) << "Resolving scopes...";
+            scl::Scope top; // top scope, in which multiple modules can be added
+            scl::resolveScopes(mod.get(), &top);
+            misc::info(TAG) << "With scopes generated:\n" << misc::beginBlock << *mod << misc::endBlock;
+            misc::info(TAG) << "Resolving types...";
+            scl::resolveTypes(mod.get());
+            misc::info(TAG) << "With types resolved:\n" << misc::beginBlock << *mod << misc::endBlock;
+            misc::info(TAG) << "Generating IR...";
+            irModule(into, mod.get());
+            misc::info(TAG) << "Generated IR:\n" << misc::beginBlock << *into << misc::endBlock;
+            return false;
         } catch (misc::SourceError &e) {
             auto msg = misc::error(TAG);
             e.writeFormatted(msg.stream(), mgr->filename(), mgr->source());

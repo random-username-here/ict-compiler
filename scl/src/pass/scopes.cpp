@@ -1,5 +1,6 @@
 #include "misclib/parse.hpp"
 #include "scl/ast/block.hpp"
+#include "scl/ast/expr.hpp"
 #include "scl/passes.hpp"
 #include <stdexcept>
 
@@ -16,7 +17,7 @@ void resolveScopes(Statement *stmnt, Scope *parent) {
         for (auto i : decl->decls()) {
             if (i->initExpr())
                 resolveScopes(i->initExpr().get(), parent);
-            i->setScopeItem(parent->createItem(i->name()));
+            parent->addDecl(i);
         }
     } else if (auto ifelse = dynamic_cast<IfElse*>(stmnt)) {
         resolveScopes(ifelse->cond().get(), parent);
@@ -35,17 +36,30 @@ void resolveScopes(Expr *expr, Scope *parent) {
         resolveScopes(un->val().get(), parent);
     } else if (auto name = dynamic_cast<Name*>(expr)) {
         auto st = parent->resolve(name->name());
-        if (!st) {
-            if (name->hasToken())
-                throw misc::SourceError(name->token(), "Unknown symbol!");
-            else
-                throw std::runtime_error("Unknown name found, no token");
-        }
-        name->setScopeItem(st);
+        if (!st)
+            throw misc::SourceError(name->token(), "Unknown symbol!");
+        name->setDecl(st);
     } else if (auto num = dynamic_cast<Number*>(expr)) {
         // nothing
+    } else if (auto pack = dynamic_cast<ArgPack*>(expr)) {
+        for (auto i : pack->items())
+            resolveTypes(i);
     } else {
         throw std::runtime_error("Unknown expr type");
+    }
+}
+
+void resolveScopes(Module *mod, Scope *parent) {
+    for (auto i : mod->entries()) {
+        if (auto func = dynamic_cast<Function*>(i)) {
+            parent->addDecl(func);
+            if (func->body()) {
+                auto inner = parent->createSubscope();
+                for (auto i : func->args())
+                    inner->addDecl(i);
+                resolveScopes(func->body().get(), inner);
+            }
+        }
     }
 }
 

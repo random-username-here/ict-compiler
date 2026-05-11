@@ -54,11 +54,17 @@ class IvmBackend : public ict::Backend {
                     }
                     output << m_instrName(op->kind());
                     for (auto arg : op->args()) {
-                        if (auto iarg = dynamic_cast<ict::ConstArg*>(arg))
+                        if (auto varg = dynamic_cast<ict::VRegArg*>(arg)) {
+                            if (dynamic_cast<const StackType*>(varg->ptr()->returnType().get()) != nullptr)
+                                continue; // used to monitor values on stack, ignored by backend
+                            else
+                                misc::error(TAG) << "Vreg register " << *arg << " made it to backend";
+
+                        } else if (auto iarg = dynamic_cast<ict::ConstArg*>(arg))
                             output << " " << iarg->value();
                         else if (auto barg = dynamic_cast<ict::BlockArg*>(arg))
                             output << " _" << func->decl()->name() << "." << barg->ptr();
-                        else if (auto farg = dynamic_cast<ict::FuncArg*>(arg))
+                        else if (auto farg = dynamic_cast<ict::GlobalArg*>(arg))
                             output << " " << farg->ptr()->name();
                         else {
                             misc::error(TAG) << "Arg " << *arg << " cannot be emitted";
@@ -72,6 +78,19 @@ class IvmBackend : public ict::Backend {
             output << misc::endBlock;
         }
     }
+    
+    bool lowOpHasSideEffects(int k) const override {
+        switch (k) {
+            case IVM_R_CALL:
+            case IVM_R_SFLOAD8: case IVM_R_SFLOAD16: case IVM_R_SFLOAD32: case IVM_R_SFLOAD64:
+            case IVM_R_SFSTORE8: case IVM_R_SFSTORE16: case IVM_R_SFSTORE32: case IVM_R_SFSTORE64:
+            case IVM_R_PUT8: case IVM_R_PUT16: case IVM_R_PUT32: case IVM_R_PUT64:
+            case IVM_R_GET8: case IVM_R_GET16: case IVM_R_GET32: case IVM_R_GET64:
+                return true;
+            default:
+                return false;
+        }
+    }
 
     bool lowOpRequiresType(int k) const override {
         return false;
@@ -81,7 +100,7 @@ class IvmBackend : public ict::Backend {
         if (op->kind() == IVM_FROMSTACK)
             return op->tparam() ? op->tparam()->clone() : ict::Type::i64_t();
         else
-            return ict::Type::void_t();
+            return StackType::create();
     }
 };
 

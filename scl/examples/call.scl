@@ -1,6 +1,6 @@
-fn puti(i64 v);
+func puti(v);
 
-fn add(i64 a, i64 b) i64 {
+func add(a, b) {
     return a + b;
 }
 

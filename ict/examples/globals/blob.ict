@@ -6,8 +6,14 @@
 decl @shutdown;
 blob_impl @shutdown 0x35 /* cli */ 0x00 /* hlt */; 
 
+decl @hello;
+blob_impl @hello "Hello world!\n";
+
 func_decl @main () void;
+func_decl @print_string (ptr) void;
+
 func_impl @main {
+    Call @print_string @hello;
     Call @shutdown;
     Ret;
 }

@@ -36,27 +36,28 @@ class HL2LL : public Pass
     }
 
     /** Operator is 1-to-1 mapped from high-level IR */
-    void m_replaceWithOneToOneMapping(Operation *op, int mlirOpKind) const
+    void m_replaceWithOneToOneMapping(Operation *op, int llirOpKind) const
     {
         auto inserter = op->parentList()->inserterBefore(op);
         bool inverse = m_hasInvertedOperandOrder(op->kind());
+        std::vector<Operation*> ops;
         for (size_t i = (inverse ? op->args().size()-1 : 0);
              inverse ? (i != (size_t) -1) : (i < op->args().size());
              inverse ? --i : ++i
         ) {
             auto arg = op->arg(i);
-            if (auto iarg = dynamic_cast<ConstArg*>(arg))
-                inserter.create(IVM_R_PUSH, nullptr, iarg->value());
-            else if (auto varg = dynamic_cast<VRegArg*>(arg))
-                inserter.create(IVM_TOSTACK, varg->ptr()->returnType()->clone(), varg->ptr());
-            else {
+            if (auto varg = dynamic_cast<VRegArg*>(arg)) {
+                ops.push_back(inserter.create(IVM_TOSTACK, nullptr, varg->ptr()));
+            } else {
                 misc::error(TAG) << "Cannot comprehend arg " << *arg << " for one-to-one mapping";
                 abort();
             }
         }
-        inserter.create(mlirOpKind);
+        auto inst = inserter.create(llirOpKind);
+        for (auto i : ops)
+            inst->args().createEnd<ict::VRegArg>(i);
         if (!op->returnType()->isVoid()) {
-            auto load = inserter.create(IVM_FROMSTACK, op->returnType()->clone());
+            auto load = inserter.create(IVM_FROMSTACK, op->returnType()->clone(), inst);
             op->replaceRefsWith(load);
         }
         op->extractSelf();
@@ -66,18 +67,16 @@ class HL2LL : public Pass
     {
         auto ins = op->parentList()->inserterBefore(op);
         for (auto arg : op->args()) {
-            if (auto iarg = dynamic_cast<ConstArg*>(arg))
-                ins.create(IVM_R_PUSH, nullptr, iarg->value());
-            else if (auto varg = dynamic_cast<VRegArg*>(arg))
-                ins.create(IVM_TOSTACK, nullptr, varg->ptr());
-            else {
+            if (auto varg = dynamic_cast<VRegArg*>(arg)) {
+                auto val = ins.create(IVM_TOSTACK, nullptr, varg->ptr());
+                ins.create(IVM_DEBUG_PRINT_INT, nullptr, val);
+            } else {
                 misc::error(TAG) << "DebugPrint has unexpected arg " << *arg;
                 abort();
             }
-            ins.create(IVM_DEBUG_PRINT_INT, nullptr);
         }
-        ins.create(IVM_R_PUSH, nullptr, (Integer) '\n');
-        ins.create(IVM_DEBUG_PRINT_CHAR, nullptr);
+        auto nl = ins.create(IVM_R_PUSH, nullptr, (Integer) '\n');
+        ins.create(IVM_DEBUG_PRINT_CHAR, nullptr, nl);
         op->extractSelf();
     }
 
@@ -92,25 +91,35 @@ class HL2LL : public Pass
         auto inserter = op->parentList()->inserterBefore(op);
         switch(op->kind()) {
             case OP_CONST: {
-                inserter.create(IVM_R_PUSH, nullptr, op->arg_c(0)->value());
-                auto val = inserter.create(IVM_FROMSTACK, nullptr);
+                auto v = inserter.create(IVM_R_PUSH, nullptr, op->arg_c(0)->value());
+                auto val = inserter.create(IVM_FROMSTACK, nullptr, v);
                 op->replaceRefsWith(val);
+                op->extractSelf();
+                return;
+            }
+            case OP_NEQ: {
+                auto a = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr());
+                auto b = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(1)->ptr());
+                auto eq = inserter.create(IVM_R_EQ, nullptr, a, b);
+                auto iszero = inserter.create(IVM_R_ISZERO, nullptr, eq);
+                auto res = inserter.create(IVM_FROMSTACK, nullptr, iszero);
+                op->replaceRefsWith(res);
                 op->extractSelf();
                 return;
             }
             case OP_RET: {
                 // TODO: returning something
                 if (op->args().size()) {
-                    inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr());
-                    inserter.create(IVM_R_SFEND, nullptr);
-                    inserter.create(IVM_R_SPOP, nullptr);
-                    inserter.create(IVM_R_SWAP, nullptr);
-                    inserter.create(IVM_R_SPUSH, nullptr);
-                    inserter.create(IVM_R_RET, nullptr);
+                    auto val = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr());
+                    inserter.create(IVM_R_SFEND, nullptr, val)->addTag("noreorder");
+                    inserter.create(IVM_R_SPOP, nullptr)->addTag("noreorder");
+                    inserter.create(IVM_R_SWAP, nullptr)->addTag("noreorder");
+                    inserter.create(IVM_R_SPUSH, nullptr)->addTag("noreorder");
+                    inserter.create(IVM_R_RET, nullptr)->addTag("noreorder");
                 } else {
-                    inserter.create(IVM_R_SFEND, nullptr);
-                    inserter.create(IVM_R_SPOP, nullptr);
-                    inserter.create(IVM_R_RET, nullptr);
+                    inserter.create(IVM_R_SFEND, nullptr)->addTag("noreorder");
+                    inserter.create(IVM_R_SPOP, nullptr)->addTag("noreorder");
+                    inserter.create(IVM_R_RET, nullptr)->addTag("noreorder");
                 }
                 op->extractSelf();
                 return;
@@ -119,31 +128,39 @@ class HL2LL : public Pass
                 inserter.create(IVM_R_RJMP, nullptr, op->arg_b(0)->ptr());
                 op->extractSelf();
                 return;
-            case OP_BC:
-                inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr());
-                inserter.create(IVM_R_RJNZ, nullptr, op->arg_b(1)->ptr());
+            case OP_BC: {
+                auto val = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr());
+                inserter.create(IVM_R_RJNZ, nullptr, op->arg_b(1)->ptr(), val);
                 inserter.create(IVM_R_RJMP, nullptr, op->arg_b(2)->ptr());
                 op->extractSelf();
                 return;
+            }
             case OP_ALLOCA: {
-                auto delta = -op->tparam()->size();
-                auto n = inserter.create(IVM_R_PUSH, nullptr, delta);
-                inserter.create(IVM_R_SADD, nullptr);
-                inserter.create(IVM_R_GSP, nullptr);
-                auto res = inserter.create(IVM_FROMSTACK, nullptr);
+                size_t size = 0;
+                ict::Operation *count = nullptr;
+                if (op->args().size() == 1)
+                    count = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr());
+                else
+                    count = inserter.create(IVM_R_PUSH, nullptr, -op->tparam()->size());
+                inserter.create(IVM_R_SADD, nullptr, count);
+                auto sp = inserter.create(IVM_R_GSP, nullptr);
+                for (auto i : op->tags())
+                    if (i.name.starts_with("var."))
+                        sp->addTag(i); // keep var names
+                auto res = inserter.create(IVM_FROMSTACK, nullptr, sp);
                 op->replaceRefsWith(res);
                 op->extractSelf();
                 return;
             }
             case OP_STORE: {
-                inserter.create(IVM_TOSTACK, nullptr, op->arg_v(1)->ptr()); // val
-                inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr()); // pos
+                auto val = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(1)->ptr()); // val
+                auto pos = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr()); // pos
                 assert(op->tparam()->isSimple());
                 switch (op->tparam()->size()) {
-                    case 1: inserter.create(IVM_R_PUT8, nullptr); break;
-                    case 2: inserter.create(IVM_R_PUT16, nullptr); break;
-                    case 4: inserter.create(IVM_R_PUT32, nullptr); break;
-                    case 8: inserter.create(IVM_R_PUT64, nullptr); break;
+                    case 1: inserter.create(IVM_R_PUT8, nullptr, val, pos); break;
+                    case 2: inserter.create(IVM_R_PUT16, nullptr, val, pos); break;
+                    case 4: inserter.create(IVM_R_PUT32, nullptr, val, pos); break;
+                    case 8: inserter.create(IVM_R_PUT64, nullptr, val, pos); break;
                     default: assert(false);
                 }
                 op->extractSelf();
@@ -151,47 +168,50 @@ class HL2LL : public Pass
             };
 
             case OP_LOAD: {
-                inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr()); // pos
+                auto pos = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr()); // pos
                 assert(op->returnType()->isSimple());
+                ict::Operation *load = nullptr;
                 switch (op->returnType()->size()) {
-                    case 1: inserter.create(IVM_R_GET8, nullptr); break;
-                    case 2: inserter.create(IVM_R_GET16, nullptr); break;
-                    case 4: inserter.create(IVM_R_GET32, nullptr); break;
-                    case 8: inserter.create(IVM_R_GET64, nullptr); break;
+                    case 1: load = inserter.create(IVM_R_GET8, nullptr, pos); break;
+                    case 2: load = inserter.create(IVM_R_GET16, nullptr, pos); break;
+                    case 4: load = inserter.create(IVM_R_GET32, nullptr, pos); break;
+                    case 8: load = inserter.create(IVM_R_GET64, nullptr, pos); break;
                     default: assert(false);
                 }
-                auto g = inserter.create(IVM_FROMSTACK, op->returnType()->clone());
+                auto g = inserter.create(IVM_FROMSTACK, op->returnType()->clone(), load);
                 op->replaceRefsWith(g);
                 op->extractSelf();
                 return;
             };
 
             case OP_ARGPTR: {
-                inserter.create(IVM_R_GSF, nullptr);
-                inserter.create(IVM_R_PUSH, nullptr, argOffsets[op->arg_a(0)->ptr()]);
-                inserter.create(IVM_R_ADD, nullptr);
-                auto g = inserter.create(IVM_FROMSTACK, Type::ptr_t());
+                auto sf = inserter.create(IVM_R_GSF, nullptr);
+                auto off = inserter.create(IVM_R_PUSH, nullptr, argOffsets[op->arg_a(0)->ptr()]);
+                auto ptr = inserter.create(IVM_R_ADD, nullptr, sf, off);
+                auto g = inserter.create(IVM_FROMSTACK, Type::ptr_t(), ptr);
                 op->replaceRefsWith(g);
                 op->extractSelf();
                 return;
             };
-
             case OP_CALL: {
-                auto func = op->arg_f(0);
-                for (size_t i = op->args().size()-1; i != 0; --i) {
-                    inserter.create(IVM_TOSTACK, nullptr, op->arg_v(i)->ptr());
-                    inserter.create(IVM_R_SPUSH, nullptr);
+                for (size_t i = op->args().size()-1; i != (size_t) -1; --i) {
+                    auto val = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(i)->ptr());
                 }
-                inserter.create(IVM_R_CALL, nullptr, func->ptr());
-                if (!func->ptr()->retType()->isVoid()) {
-                    inserter.create(IVM_R_SPOP, nullptr);
-                    auto g = inserter.create(IVM_FROMSTACK, op->returnType()->clone());
+                auto cl = inserter.create(IVM_R_CALL, nullptr);
+                if (!op->returnType()->isVoid()) {
+                    auto g = inserter.create(IVM_FROMSTACK, op->returnType()->clone(), cl);
                     op->replaceRefsWith(g);
                 }
-                inserter.create(IVM_R_SADD, nullptr, 8 * (op->args().size() - 1)); // remove args
                 op->extractSelf();
                 return;
             };
+            case OP_GLOBALPTR: {
+                auto v = inserter.create(IVM_R_PUSH, nullptr, op->arg_g(0)->ptr());
+                auto g = inserter.create(IVM_FROMSTACK, Type::ptr_t(), v);
+                op->replaceRefsWith(g);
+                op->extractSelf();
+                return;
+            }
             case OP_DEBUG_PRINT:
                 m_convertDebugPrint(op);
                 return;
@@ -212,6 +232,7 @@ class HL2LL : public Pass
         for (auto it : mgr->module()->impls()) {
             auto func = dynamic_cast<FunctionImpl*>(it);
             if (!func) continue;
+            func->invalidateAnalysis();
 
             std::unordered_map<ArgDecl*, int> offsets;
             // Stack frame:
@@ -234,11 +255,11 @@ class HL2LL : public Pass
             }
             auto entry = func->blocks().first();
             auto ins = entry->operations().inserterBefore(entry->operations().first());
-            ins.create(IVM_R_SPUSH, nullptr);
-            ins.create(IVM_R_SFBEGIN, nullptr);
+            ins.create(IVM_R_SPUSH, nullptr)->addTag("noreorder");
+            for (auto i : func->decl()->args())
+                ins.create(IVM_R_SPUSH, nullptr)->addTag("noreorder")->addTag(Tag(std::string("arg.") + std::string(i->name())));
+            ins.create(IVM_R_SFBEGIN, nullptr)->addTag("noreorder");
         }
-        misc::verb(TAG) << "Resulting IR:\n" << misc::beginBlock << *mgr->module() << misc::endBlock;
-
     }
 };
 

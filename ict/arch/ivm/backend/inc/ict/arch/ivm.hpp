@@ -3,6 +3,8 @@
  * \brief Operator types for IVM
  */
 #pragma once
+#include "ict/ir.hpp"
+#include "misclib/defs.hpp"
 namespace ict::ar::ivm {
 
 #define ICT_IVM_FOR_ALL_OPS(X)\
@@ -64,4 +66,17 @@ namespace ict::ar::ivm {
 ICT_IVM_FOR_ALL_OPS(X)
 #undef X
 
+/**
+ * Fictive type for vregs which actually reference something on stack
+ */
+class StackType : public ict::Type {
+public:
+    MISC_CREATEFUNC(StackType);
+    UPtr<Type> clone() const override { return StackType::create(); }
+    size_t size() const override { return 0; }
+    size_t align() const override { return 1; }
+    size_t offset(size_t elem) const override { return -1; }
+    void dump(std::ostream &os) const override { os << "(on stack)"; }
+    bool isSameAs(const Type *t) const override { return dynamic_cast<const StackType*>(t) != nullptr; }
+};
 };

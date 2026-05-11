@@ -8,17 +8,13 @@ func_decl @main() void;
 func_impl @fib {
     %n.ptr ArgPtr %n;
     %n.val Load[i64] %n.ptr;
-    //DebugPrint %n.val;
-    %two Const 2;
-    %lt Lt %n.val %two;
+    %lt Lt %n.val 2;
     Bc %lt %isOne %recurse;
 %isOne:
-    %one Const 1;
-    Ret %one;
+    Ret 1;
 %recurse:
-    %one.1 Const 1;
-    %s1 Sub %n.val %one.1;
-    %s2 Sub %s1 %one.1;
+    %s1 Sub %n.val 1;
+    %s2 Sub %s1 1;
     %v1 Call @fib %s1;
     %v2 Call @fib %s2;
     %res Add %v1 %v2;

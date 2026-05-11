@@ -15,9 +15,7 @@ func_impl @add {
 }
 
 func_impl @main {
-    %a          Const 12;
-    %b          Const 34;
-    %res        Call @add %a %b;
+    %res        Call @add 12 34;
                 DebugPrint %res;
                 Ret;
 }

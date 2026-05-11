@@ -171,6 +171,10 @@ View tokenize(View view, int flags, Token *tok) {
     view = withoutWhitespaces(view, flags);
     if (view.empty())
         return takeToken(view, 0, TOK_EOF, tok);
+    if ((flags & TOKF_PTRS)) {
+        if (view[0] == '*' || view[0] == '&')
+            return takeToken(view, 1, (TokenType) view[0], tok);
+    }
     switch (view[0]) {
         case '(': case ')':
         case '[': case ']':

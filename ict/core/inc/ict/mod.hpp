@@ -8,18 +8,12 @@ namespace ict {
 
 class Manager;
 
-class Analysis
-{
-public:
-    virtual ~Analysis() {}
-};
-
 class Analyzer :
         public Mod 
 {
 public:
     virtual size_t analysisId() const = 0;
-    virtual UPtr<Analysis> run(Manager *mgr) const = 0;
+    virtual UPtr<Analysis> run(const FunctionImpl *impl) const = 0;
     virtual ~Analyzer() {}
 };
 
@@ -49,6 +43,7 @@ public:
     virtual int str2lowOp(View name) const = 0;
     virtual misc::View lowOp2str(int k) const = 0;
     virtual bool lowOpRequiresType(int k) const = 0;
+    virtual bool lowOpHasSideEffects(int k) const = 0;
     virtual UPtr<Type> createReturnType(Operation *op) const = 0;
 
     virtual void emit(Manager *mgr, std::ostream &output) const = 0;
@@ -74,7 +69,6 @@ class Manager {
     UPtr<Module> m_module;
     std::vector<Pass*> m_passes;
     std::unordered_map<size_t, Analyzer*> m_analyzers;
-    std::unordered_map<size_t, UPtr<Analysis>> m_analyses;
 public:
 
     static Manager *main();
@@ -88,24 +82,10 @@ public:
     bool setFrontend(View name);
     bool choseFrontendByFileExt();
 
-    template<typename T>
-    T *analysis() {
-        auto id = typeid(T).hash_code();
-        if (m_analyses.count(id) == 0) {
-            if (m_analyzers.count(id) == 0)
-                return nullptr;
-            m_analyses.insert({ id, m_analyzers.at(id)->run(this) });
-        }
-        return static_cast<T*>(m_analyses.at(id).get());
-    }
-
-    template<typename T>
-    void invalidateAnalysis() {
-        auto id = typeid(T).hash_code();
-        m_analyses.erase(id);
-    }
-    inline void invalidateAllAnalyses() {
-        m_analyses.clear();
+    UPtr<Analysis> runAnalyzer(size_t id, const FunctionImpl *on) {
+        if (m_analyzers.count(id) == 0)
+            return nullptr;
+        return m_analyzers.at(id)->run(on);
     }
 
     bool parse();

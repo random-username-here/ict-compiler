@@ -1,5 +1,6 @@
 ///
 /// Vregs defined in one block, used in another.
+/// Ideally, vregs should not be spilled for this
 ///
 
 func_decl @main () void;

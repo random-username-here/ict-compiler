@@ -3,7 +3,8 @@
 #include "misclib/defs.hpp"
 #include "misclib/parse.hpp"
 #include "misclib/tree.hpp"
-#include "scl/scope.hpp"
+#include "scl/ast/basic.hpp"
+#include "scl/ast/type.hpp"
 
 namespace scl {
 
@@ -28,6 +29,7 @@ enum BinaryKind {
     BIN_EQ,
     BIN_NEQ,
     BIN_COMMA,
+    BIN_ASSIGN,
     BIN_SPACE, // empty space operator (`a b`), used as call/multiplication/..., depending on type
 };
 
@@ -42,8 +44,12 @@ enum UnaryKind {
 
 ict::View unKind2str(UnaryKind k);
 
-class Expr : public misc::Item<Expr> {
+class Expr : public misc::Item<Expr>, public misc::WithToken {
+    misc::Slot<Expr, Type> m_type;
 public:
+    Expr(misc::Token tok) :WithToken(tok), m_type(this) {}
+    auto &type() { return m_type; }
+    auto &type() const { return m_type; }
     virtual void dump(std::ostream &os) const = 0;
     virtual ~Expr() {};
 };
@@ -52,10 +58,11 @@ class Binary : public Expr {
     BinaryKind m_kind;
     misc::Slot<Binary, Expr> m_left, m_right;
 public:
-    Binary() :m_left(this), m_right(this), m_kind(BIN_UNKNOWN) {}
-    Binary(BinaryKind kind, UPtr<Expr> &&l, UPtr<Expr> &&r)
-        :m_left(this, std::move(l)), m_right(this, std::move(r)), m_kind(kind) {}
+    Binary(misc::Token tok, BinaryKind kind, UPtr<Expr> &&l, UPtr<Expr> &&r)
+        :Expr(tok), m_left(this, std::move(l)), m_right(this, std::move(r)), m_kind(kind) {}
     MISC_CREATEFUNC(Binary);
+
+    void setKind(BinaryKind k) { m_kind = k; } // used to convert space to multiplication
 
     void dump(std::ostream &os) const override;
     BinaryKind kind() const { return m_kind; }
@@ -69,10 +76,11 @@ class Unary : public Expr {
     UnaryKind m_kind;
     misc::Slot<Unary, Expr> m_val;
 public:
-    Unary() :m_kind(UN_UNKNOWN), m_val(this) {}
-    Unary(UnaryKind k, UPtr<Expr> &&v)  :m_kind(k), m_val(this, std::move(v)) {}
+    Unary(misc::Token tok, UnaryKind k, UPtr<Expr> &&v)  :Expr(tok), m_kind(k), m_val(this, std::move(v)) {}
     MISC_CREATEFUNC(Unary);
-    
+   
+    void setKind(UnaryKind k) { m_kind = k; }
+
     void dump(std::ostream &os) const override;
     UnaryKind kind() const { return m_kind; }
     auto &val() { return m_val; }
@@ -82,36 +90,31 @@ public:
 class Number : public Expr {
     ict::Integer m_val;
 public:
-    Number(ict::Integer i = 0) :m_val(i) {}
+    Number(misc::Token tok) :Expr(tok), m_val(tok.decodeNum()) {}
     MISC_CREATEFUNC(Number);
     auto val() const { return m_val; }
     void dump(std::ostream &os) const override;
 };
 
 class Name : public Expr {
-    std::string m_name;
-    ScopeItem *m_item = nullptr;
-    misc::Token m_tok;
+    Decl *m_item = nullptr;
 public:
-    Name(misc::Token tok) :m_name(tok.view), m_tok(tok) {}
-    Name(ict::View n = "") :m_name(n) {}
+    Name(misc::Token tok) :Expr(tok) {}
     MISC_CREATEFUNC(Name);
 
-    misc::Token token() const { return m_tok; }
-    bool hasToken() const { return m_tok.type != misc::TOK_EOF; }
+    Decl *decl() { return m_item; }
+    const Decl *decl() const { return m_item; }
+    void setDecl(Decl *d) { m_item = d; }
 
-    ScopeItem *scopeItem() { return m_item; }
-    const ScopeItem *scopeItem() const { return m_item; }
-    void setScopeItem(ScopeItem *it) { m_item = it; }
-
-    auto name() const { return m_name; }
+    auto name() const { return token().view; }
     void dump(std::ostream &os) const override;
 };
 
 class ArgPack : public Expr {
     misc::SlotVector<ArgPack, Expr> m_items;
 public:
-    ArgPack() :m_items(this) {}
+    template<typename ...Args>
+    ArgPack(misc::Token tok, Args &&...args) :Expr(tok), m_items(this, std::forward<Args>(args)...) {}
     MISC_CREATEFUNC(ArgPack);
 
     const auto &items() const { return m_items; }

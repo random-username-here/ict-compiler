@@ -18,7 +18,6 @@ Manager *Manager::main() {
     return l_main_mgr;
 }
 
-
 void Manager::setSource(View source, View filename)
 {
     m_source = source;
@@ -87,6 +86,7 @@ void Manager::runAllPasses()
     for (auto pass : m_passes) {
         misc::info(TAG) << "Running pass " << ACCENT << pass->id() << RST;
         pass->run(this);
+        misc::info(TAG) << "Pass " << ACCENT << pass->id() << RST << " gave:\n" << misc::beginBlock << *module() << misc::endBlock;
     }
 }
 void Manager::emit(std::ostream &out)

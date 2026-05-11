@@ -44,6 +44,8 @@ enum TokenType {
     TOK_DOTS        = ':',
     TOK_COMMA       = ',',
     TOK_DOT         = '.',
+    TOK_DEREF       = '*', // only if TOKF_PTR, otherwise is an TOK_OP
+    TOK_REF         = '&', // only if TOKF_PTR, otherwise is an TOK_OP
     TOK_NEWLINE     = '\n',
 
 };
@@ -66,6 +68,7 @@ enum TokenFlags {
     TOKF_NONE    = 0,
     TOKF_NL      = 1, // newline as separate token
     TOKF_DOTNAME = 2, // `.`, `@` are valid identifier characters
+    TOKF_PTRS    = 4, // `*` and `&` are separate characters
 };
 
 /// Check if view starts with given other view

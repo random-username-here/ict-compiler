@@ -1,0 +1,23 @@
+Ideas:
+    lang    : variadic functions? i want printf
+    lang    : templates? so printf using variadic templates?
+    opt     : inlined functions? !inline tag.
+    ivm     : linker, !local decls
+    ivm     : device bus
+    ivm     : new assembler
+
+Good to have:
+    lang    : short-circuiting && and ||
+
+Must be done:
+    opt     : constant expression folding
+    lang    : return operator
+    lang    : create casts
+    lang    : global consts
+    lang    : for, while
+    ivm     : modem
+    lib     : ivm hal
+
+Done:
+    BUG     : reorder trashes order at the end
+    an      : register numbering, stop looking at pointers

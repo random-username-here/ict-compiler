@@ -10,14 +10,27 @@ add_compile_options(-g)
 add_subdirectory(misclib)
 add_subdirectory(modlib)
 
+# IR base
 add_subdirectory(ict/core)
-add_subdirectory(ict/ir)
-#add_subdirectory(ict/analyses/below)
-#add_subdirectory(ict/analyses/crossblock)
+
+# Analyses
+add_subdirectory(ict/analyses/numbering)
+
+# Passes
+add_subdirectory(ict/passes/dehumanify)
+
+# IVM Backend
 add_subdirectory(ict/arch/ivm/backend)
 add_subdirectory(ict/arch/ivm/hl2ll)
 add_subdirectory(ict/arch/ivm/basic-stackplan)
 
+# Optimization passes for IVM
+add_subdirectory(ict/arch/ivm/passes/reorder)
+
+# IR frontend
+add_subdirectory(ict/ir)
+
+# Language frontend
 add_subdirectory(scl)
 
 

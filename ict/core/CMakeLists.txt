@@ -3,6 +3,7 @@ project(ict)
 add_library(ict-lib SHARED)
 target_include_directories(ict-lib PUBLIC inc/)
 target_link_libraries(ict-lib PUBLIC misclib modlib)
+target_link_libraries(ict-lib PRIVATE ict-an-numbering)
 target_sources(ict-lib PRIVATE src/ir.cpp src/mod.cpp src/ir.verify.cpp)
 
 add_executable(ict-example-playground EXCLUDE_FROM_ALL)
