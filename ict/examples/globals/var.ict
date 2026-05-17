@@ -1,0 +1,14 @@
+///
+/// Global variables
+///
+
+decl @global_var;
+bss_impl @global_var 8;
+
+func_decl @main() void;
+func_impl @main {
+            Store[i64] @global_var 123;
+    %res    Load[i64] @global_var;
+            DebugPrint %res;
+            Ret;
+}

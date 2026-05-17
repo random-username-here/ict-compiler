@@ -2,21 +2,28 @@
 #include "ict/ir.hpp"
 #include "misclib/defs.hpp"
 #include "misclib/tree.hpp"
+#include "scl/ast/basic.hpp"
 #include <optional>
 namespace scl {
 
 using misc::UPtr;
 
 class Type : public misc::Item<Type> {
+    // this does no unwrap named
+    virtual bool isSameAs(const Type *other) const = 0;
+    bool m_isConst = false;
+protected:
+    void dumpQualifiers(std::ostream &os) const;
 public:
     virtual UPtr<Type> copy() const = 0;
     virtual UPtr<ict::Type> toICT() const = 0;
     virtual void dump(std::ostream &o) const = 0;
-    virtual bool isSameAs(const Type *other) const = 0;
 
     virtual size_t byteSize() const = 0;
     virtual size_t alignment() const = 0;
     virtual bool isComplete() const = 0;
+    bool isConst() const { return m_isConst; }
+    void setConst(bool c) { m_isConst = c; }
 
     bool isInteger() const;
     bool isVoid() const;
@@ -24,10 +31,22 @@ public:
     bool isFunction() const;
     bool isFunctionPtr() const;
     bool isPack() const;
+    bool isBool() const;
+    bool isType() const;
+    bool isNamed() const;
+    const Type *unwrapNamed() const;
+
+    static bool areSame(const Type *a, const Type *b);
+
+    template<typename T>
+    T* as() { return static_cast<T*>(this); }
+    template<typename T>
+    const T* as() const { return static_cast<const T*>(this); }
 };
 
 #define SCL_FOR_EACH_TYPE(X)\
-        X(INT64, "int64", 8, ict::Type::i64_t())\
+        X(INT64, "int64", 8, ict::Type::i64_t()) X(INT32, "int32", 4, ict::Type::i32_t())\
+        X(INT16, "int16", 2, ict::Type::i16_t()) X(INT8, "int8", 1, ict::Type::i8_t())\
         X(BOOL, "bool", 1, ict::Type::i8_t()) X(VOID, "void", 0, ict::Type::void_t())
 
 class PrimitiveType : public Type {
@@ -124,7 +143,59 @@ public:
     virtual size_t byteSize() const { return 0; }
     virtual size_t alignment() const { return 1; }
     virtual bool isComplete() const { return false; }
+};
 
+/// For type declarations
+class TypeType : public Type {
+public:
+    TypeType() {}
+    MISC_CREATEFUNC(TypeType);
+
+    virtual UPtr<ict::Type> toICT() const { return nullptr; };
+    virtual UPtr<Type> copy() const { return TypeType::create(); }
+
+    virtual void dump(std::ostream &o) const;
+    virtual bool isSameAs(const Type *other) const;
+
+    virtual size_t byteSize() const { return 0; }
+    virtual size_t alignment() const { return 1; }
+    virtual bool isComplete() const { return false; }
+};
+
+class NamedType : public Type {
+    misc::Token m_name;
+    TypeDecl *m_decl;
+    misc::Slot<NamedType, Type> m_resolved;
+public:
+    NamedType(misc::Token name) :m_name(name), m_resolved(this) {}
+    MISC_CREATEFUNC(NamedType);
+    
+    misc::Token token() const { return m_name; }
+    misc::View name() const { return m_name.view; }
+
+    TypeDecl *decl() { return m_decl; }
+    TypeDecl *decl() const { return m_decl; }
+    void setDecl(TypeDecl *d) { m_decl = d; }
+
+    bool isResolved() const { return m_resolved; }
+    auto &resolved() { return m_resolved; } 
+    auto &resolved() const { return m_resolved; } 
+
+    virtual void dump(std::ostream &o) const;
+    virtual bool isSameAs(const Type *other) const;
+
+    virtual UPtr<ict::Type> toICT() const { assert(isResolved()); return resolved()->toICT(); };
+    virtual UPtr<Type> copy() const {
+        auto t = NamedType::create(token());
+        t->setDecl(decl());
+        if (isResolved())
+            t->resolved() = resolved()->copy();
+        return t;
+    }
+
+    virtual size_t byteSize() const { assert(isResolved()); return resolved()->byteSize(); }
+    virtual size_t alignment() const { assert(isResolved()); return resolved()->alignment(); }
+    virtual bool isComplete() const { assert(isResolved()); return resolved()->isComplete(); }
 
 };
 

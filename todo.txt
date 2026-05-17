@@ -5,19 +5,29 @@ Ideas:
     ivm     : linker, !local decls
     ivm     : device bus
     ivm     : new assembler
+    lang    : make types expressions
 
 Good to have:
     lang    : short-circuiting && and ||
+    lang    : strings -> backend blobs
+    lang    : init, fini
+    opt     : constant expression folding
+    lang    : for
+    ict     : array
+    ict     : struct -> ElemPtr & calling convenion
+    lang    : cast operator: `x as *int8`
 
 Must be done:
-    opt     : constant expression folding
-    lang    : return operator
-    lang    : create casts
-    lang    : global consts
-    lang    : for, while
-    ivm     : modem
-    lib     : ivm hal
+    lang    : include [easy]
 
 Done:
+    lang    : consts
+    ict     : decl [easy]
+    ict     : bss_impl [mid]
+    ict     : blob_impl [easy]
+    ivm     : modem
+    lang    : while
+    lang    : create casts
+    lang    : return operator
     BUG     : reorder trashes order at the end
     an      : register numbering, stop looking at pointers

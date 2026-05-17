@@ -53,4 +53,35 @@ public:
     void dump(std::ostream &os) const;
 };
 
+class TypeDef : public TopLevel, public TypeDecl {
+public:
+    using TypeDecl::TypeDecl;
+    MISC_CREATEFUNC(TypeDef);
+
+    void dump(std::ostream &os) const override;
+};
+
+class GlobalVar;
+
+class GlobalVarBlock : public TopLevel {
+    misc::SlotList<GlobalVarBlock, GlobalVar> m_vars;
+public:
+    GlobalVarBlock() :m_vars(this) {}
+    MISC_CREATEFUNC(GlobalVarBlock);
+
+    auto &vars() { return m_vars; } auto &vars() const { return m_vars; }
+    void dump(std::ostream &os) const override;
+};
+
+class GlobalVar : public GlobalDecl, public MISC_ITEM_IN(GlobalVar, &GlobalVarBlock::vars) {
+    misc::Slot<GlobalVar, Expr> m_initExpr;
+public:
+    GlobalVar(misc::Token name, UPtr<Type> &&type, UPtr<Expr> &&init = nullptr) 
+        :m_initExpr(this, std::move(init)), GlobalDecl(name, std::move(type)) {}
+    MISC_CREATEFUNC(GlobalVar);
+
+    auto &initExpr() { return m_initExpr; } auto &initExpr() const { return m_initExpr; }
+    void dump(std::ostream &os) const;
+};
+
 };

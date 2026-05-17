@@ -50,7 +50,8 @@ bool checkMathOps(const Operation *op) {
         return false;
     } 
 
-    const Type *computedRetType = nullptr;
+    // lets pretend adding ptr and int64 is ok for now
+    //const Type *computedRetType = nullptr;
 
     bool ok = true;
     for (size_t i = 0; i < 2; ++i) {
@@ -68,7 +69,7 @@ bool checkMathOps(const Operation *op) {
         } else if (!from->returnType()->isSimple()) {
             misc::error(TAG) << opId(op) << "'s " << (i+1) << " argument is not of a simple type";
             ok = false;
-        } else if (computedRetType && !computedRetType->isSameAs(from->returnType().get())) {
+        }/* else if (computedRetType && !computedRetType->isSameAs(from->returnType().get())) {
             if (!op->tparam()) {
                 misc::error(TAG) << opId(op) << "'s arguments type mismatch, and no tparam is given: first is "
                     << *computedRetType << ", second is " << *from->returnType();
@@ -76,7 +77,7 @@ bool checkMathOps(const Operation *op) {
             }
         } else {
             computedRetType = from->returnType().get();
-        }
+        }*/
     }
 
     return ok;

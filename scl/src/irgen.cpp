@@ -4,6 +4,7 @@
 #include "scl/ast/block.hpp"
 #include "scl/ast/expr.hpp"
 #include "scl/ast/module.hpp"
+#include "scl/ast/type.hpp"
 #include <stdexcept>
 
 namespace scl {
@@ -49,6 +50,9 @@ ict::Operation *irExpr(IRGenCtx *ctx, Expr *expr) {
     auto blk = ctx->curBlock;
     if (auto num = dynamic_cast<Number*>(expr)) {
         return blk->operations().createEnd(ict::OP_CONST, nullptr, num->val());
+    } else if (auto str = dynamic_cast<String*>(expr)) {
+        auto blob = ctx->func()->parent()->createString(str->val());
+        return blk->operations().createEnd(ict::OP_GLOBALPTR, nullptr, blob);
     } else if (auto unary = dynamic_cast<Unary*>(expr)) {
         switch (unary->kind()) {
             case UN_UNKNOWN: throw std::runtime_error("UN_UNKNOWN found");
@@ -64,8 +68,13 @@ ict::Operation *irExpr(IRGenCtx *ctx, Expr *expr) {
             }
             case UN_DEREF: {
                 // TODO: types
+                auto ptr = dynamic_cast<PointerType*>(unary->val()->type().get());
+                assert(ptr);
+                auto it = ptr->to()->toICT();
+                if (!it)
+                    throw misc::SourceError(unary->token(), "Currently non-ict-convertible types cannot be dereferenced");
                 auto addr = irExpr(ctx, unary->val().get());
-                return blk->operations().createEnd(ict::OP_LOAD, ict::Type::i64_t(), addr);
+                return blk->operations().createEnd(ict::OP_LOAD, std::move(it), addr);
             }
         }
     } else if (auto binary = dynamic_cast<Binary*>(expr)) {
@@ -79,9 +88,13 @@ ict::Operation *irExpr(IRGenCtx *ctx, Expr *expr) {
         auto right = irExpr(ctx, binary->right().get());
         if (binary->kind() == BIN_ADD || binary->kind() == BIN_SUB) {
             if (binary->left()->type()->isPointer()) {
-                right = blk->operations().createEnd(ict::OP_MUL, nullptr, right, binary->left()->type()->byteSize());
+                auto size = binary->left()->type()->as<PointerType>()->to()->byteSize();
+                if (size == 0) size = 1;
+                right = blk->operations().createEnd(ict::OP_MUL, nullptr, right, size);
             } else if (binary->right()->type()->isPointer()) {
-                left = blk->operations().createEnd(ict::OP_MUL, nullptr, left, binary->right()->type()->byteSize());
+                auto size = binary->left()->type()->as<PointerType>()->to()->byteSize();
+                if (size == 0) size = 1;
+                left = blk->operations().createEnd(ict::OP_MUL, nullptr, left, size);
             }
         }
         // TODO: run right only if left is false/true in OR/AND
@@ -102,6 +115,11 @@ ict::Operation *irExpr(IRGenCtx *ctx, Expr *expr) {
             case BIN_GE:  kind = ict::OP_GE; break;
             case BIN_EQ:  kind = ict::OP_EQ; break;
             case BIN_NEQ: kind = ict::OP_NEQ; break;
+            case BIN_LSH: kind = ict::OP_LSH; break;
+            case BIN_RSH: kind = ict::OP_RSH; break;
+            case BIN_BAND: kind = ict::OP_AND; break;
+            case BIN_BOR: kind = ict::OP_OR; break;
+            case BIN_BXOR: kind = ict::OP_XOR; break;
         }
         return blk->operations().createEnd(kind, nullptr, left, right);
     } else if (auto name = dynamic_cast<Name*>(expr)) {
@@ -146,10 +164,12 @@ void irStmnt(IRGenCtx *ctx, Statement *stmnt) {
             ctx->curBlock->operations().createEnd(ict::OP_BC, nullptr, cond, then, otherwise);
             ctx->curBlock = then;
             irStmnt(ctx, ifElse->then().get()); // curBlock may change
-            ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, followup);
+            if (!ctx->blockIsEnded())
+                ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, followup);
             ctx->curBlock = otherwise;
             irStmnt(ctx, ifElse->otherwise().get()); // curBlock may change
-            ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, followup);
+            if (!ctx->blockIsEnded())
+                ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, followup);
             ctx->curBlock = followup;
         } else {
             //
@@ -159,9 +179,37 @@ void irStmnt(IRGenCtx *ctx, Statement *stmnt) {
             ctx->curBlock->operations().createEnd(ict::OP_BC, nullptr, cond, then, followup);
             ctx->curBlock = then;
             irStmnt(ctx, ifElse->then().get()); // curBlock may change
-            ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, followup);
+            if (!ctx->blockIsEnded())
+                ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, followup);
             ctx->curBlock = followup;
         }
+    } else if (auto ret = dynamic_cast<ReturnStatement*>(stmnt)) {
+        if (ret->expr()) {
+            auto res = irExpr(ctx, ret->expr().get());
+            ctx->curBlock->operations().createEnd(ict::OP_RET, nullptr, res);
+        } else {
+            ctx->curBlock->operations().createEnd(ict::OP_RET, nullptr);
+        }
+    } else if (auto whl = dynamic_cast<While*>(stmnt)) {
+        auto check = ctx->func()->blocks().createAfter(ctx->curBlock);
+        auto body = ctx->func()->blocks().createAfter(check);
+        auto followup = ctx->func()->blocks().createAfter(body);
+        check->addTag("while.check");
+        body->addTag("while.body");
+        followup->addTag("while.followup");
+
+        ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, check);
+
+        ctx->curBlock = check;
+        auto cond = irExpr(ctx, whl->cond().get());
+        ctx->curBlock->operations().createEnd(ict::OP_BC, nullptr, cond, body, followup);
+
+        ctx->curBlock = body;
+        irStmnt(ctx, whl->body().get());
+        if (!ctx->curBlock->operations().last()->isTerminal())
+            ctx->curBlock->operations().createEnd(ict::OP_BR, nullptr, check);
+
+        ctx->curBlock = followup;
     } else {
         throw std::runtime_error("Unknown statement type!");
     }
@@ -192,15 +240,44 @@ static void l_irFunc(ict::Module *into, Function *func) {
     scl::IRGenCtx ctx = { .curBlock = start };
     // TODO: place return statement
     scl::irStmnt(&ctx, func->body().get());
+
+    if (func->returnType()->isVoid())
+        ctx.curBlock->operations().createEnd(ict::OP_RET, nullptr);
 }
 
+ict::Integer evalConst(Expr *expr) {
+    // TODO: expressions, other constants
+    if (auto num = dynamic_cast<Number*>(expr)) {
+        return num->val();
+    } else {
+        throw misc::SourceError(expr->token(), "Constant initializers can only be numbers for now, no expressions");
+    }
+}
 
 void irModule(ict::Module *into, Module *mod) {
     for (auto tl : mod->entries()) {
         if (auto func = dynamic_cast<Function*>(tl))
             l_irFunc(into, func);
-        else
+        else if (auto tdecl = dynamic_cast<TypeDef*>(tl)) {
+            // skip typedef
+        } else if (auto gvb = dynamic_cast<GlobalVarBlock*>(tl)) {
+            for (auto i : gvb->vars()) {
+                auto decl = into->decls().createEnd<ict::TopDecl>(i->name());
+                i->setIctDecl(decl);
+                if (!i->type()->isConst()) {
+                    if (i->initExpr())
+                        throw misc::SourceError(i->initExpr()->token(), "Non-constant globals currently are only zero-initialized");
+                    into->impls().createEnd<ict::BssImpl>(decl, i->type()->byteSize());
+                } else {
+                    if (!i->initExpr())
+                        throw misc::SourceError(i->token(), "Uninitialized constant");
+                    auto blob = into->impls().createEnd<ict::BlobImpl>(decl);
+                    blob->add64(evalConst(i->initExpr().get()));
+                }
+            }
+        } else {
             throw std::runtime_error("TopLevel type not known!");
+        }
     }
 }
 

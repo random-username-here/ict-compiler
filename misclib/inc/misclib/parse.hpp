@@ -3,6 +3,7 @@
  * \brief A simple tokenizer
  */
 #pragma once
+#include <cstddef>
 #include <exception>
 #include <string>
 #include <string_view>
@@ -32,6 +33,7 @@ enum TokenType {
     TOK_NAME        = 'n',
     TOK_OP          = '?',
     TOK_STR         = '"',
+    TOK_CHAR        = '\'',
 
     // single-character tokens
     TOK_LBRACE      = '(',
@@ -121,6 +123,7 @@ class WithToken {
 public:
     WithToken() {}
     WithToken(misc::Token view) :m_token(view) {}
+    WithToken(std::nullptr_t) {}
     const misc::Token &token() const { return m_token; }
 };
 

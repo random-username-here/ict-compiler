@@ -41,4 +41,26 @@ void Function::genDeclType() {
     type() = std::move(ft);
 }
 
+void TypeDef::dump(std::ostream &os) const {
+    os << GREEN << "TypeDef" << CYAN << " " << name() << "\n" << misc::beginBlock;
+    if (aliasedType())
+        os << DGRAY << "type: " << RST << *aliasedType() << '\n';
+    os << misc::endBlock;
+}
+
+void GlobalVarBlock::dump(std::ostream &os) const {
+    os << GREEN << "GlobalVarBlock" << RST << "\n" << misc::beginBlock;
+    for (auto i : vars()) os << *i;
+    os << misc::endBlock;
+}
+
+void GlobalVar::dump(std::ostream &os) const {
+    os << GREEN << "GlobalVar " << RST << name() << " ";
+    if (type())
+        os << *type();
+    else
+        os << DGRAY << "(type not known yet)";
+    os << "\n";
+}
+
 };

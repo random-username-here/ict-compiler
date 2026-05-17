@@ -80,7 +80,7 @@ class HL2LL : public Pass
         op->extractSelf();
     }
 
-    void m_convert(Operation *op, std::unordered_map<ArgDecl*, int> argOffsets) const
+    void m_convert(Operation *op, std::unordered_map<ArgDecl*, int> argOffsets, FunctionImpl *inside) const
     {
         int o2o = m_getOneToOneMapping(op->kind());
         if (o2o) {
@@ -108,19 +108,14 @@ class HL2LL : public Pass
                 return;
             }
             case OP_RET: {
-                // TODO: returning something
                 if (op->args().size()) {
                     auto val = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(0)->ptr());
-                    inserter.create(IVM_R_SFEND, nullptr, val)->addTag("noreorder");
-                    inserter.create(IVM_R_SPOP, nullptr)->addTag("noreorder");
-                    inserter.create(IVM_R_SWAP, nullptr)->addTag("noreorder");
-                    inserter.create(IVM_R_SPUSH, nullptr)->addTag("noreorder");
-                    inserter.create(IVM_R_RET, nullptr)->addTag("noreorder");
-                } else {
-                    inserter.create(IVM_R_SFEND, nullptr)->addTag("noreorder");
-                    inserter.create(IVM_R_SPOP, nullptr)->addTag("noreorder");
-                    inserter.create(IVM_R_RET, nullptr)->addTag("noreorder");
                 }
+                inserter.create(IVM_R_SFEND, nullptr)->addTag("noreorder");
+                inserter.create(IVM_R_SADD, nullptr, inside->decl()->args().size() * 8)->addTag("noreorder"); // drop args
+                inserter.create(IVM_R_SPOP, nullptr)->addTag("noreorder");
+                inserter.create(IVM_R_RET, nullptr)->addTag("noreorder");
+
                 op->extractSelf();
                 return;
             }
@@ -194,10 +189,14 @@ class HL2LL : public Pass
                 return;
             };
             case OP_CALL: {
+                std::vector<ict::Operation*> refs;
                 for (size_t i = op->args().size()-1; i != (size_t) -1; --i) {
-                    auto val = inserter.create(IVM_TOSTACK, nullptr, op->arg_v(i)->ptr());
+                    refs.push_back(inserter.create(IVM_TOSTACK, nullptr, op->arg_v(i)->ptr()));
                 }
                 auto cl = inserter.create(IVM_R_CALL, nullptr);
+                for (auto i : refs)
+                    cl->args().createEnd<ict::VRegArg>(i);
+
                 if (!op->returnType()->isVoid()) {
                     auto g = inserter.create(IVM_FROMSTACK, op->returnType()->clone(), cl);
                     op->replaceRefsWith(g);
@@ -240,7 +239,7 @@ class HL2LL : public Pass
             // 0 - prev stack frame
             // 8 - return address
             // >=16 - args
-            int off = 16; 
+            int off = 8; 
             for (auto arg : func->decl()->args()) {
                 assert(arg->type()->size() <= 8); // dumb calling convention: all args are 8 bytes, on datastack
                 offsets[arg] = off;
@@ -249,7 +248,7 @@ class HL2LL : public Pass
             for (auto block : func->blocks()) {
                 for (auto it = block->operations().last(); it != nullptr;) {
                     auto n = it->prev();
-                    m_convert(it, offsets);
+                    m_convert(it, offsets, func);
                     it = n;
                 }
             }

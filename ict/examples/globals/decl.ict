@@ -1,0 +1,10 @@
+///
+/// Global declarations
+///
+decl @helloworld_str; // see ivm/test.s
+
+func_decl @main() void;
+func_impl @main {
+    DebugPrint @helloworld_str;
+    Ret;
+}

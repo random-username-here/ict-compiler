@@ -19,8 +19,14 @@ namespace ict::ar::ivm {
     X(  -0x101, false,  OP_ADD,     IVM_R_ADD,      "IVM.R.Add",        "add")\
     X(  -0x102, false,  OP_SUB,     IVM_R_SUB,      "IVM.R.Sub",        "sub")\
     X(  -0x103, false,  OP_MUL,     IVM_R_MUL,      "IVM.R.Mul",        "mul")\
-    X(  -0x103, false,  OP_DIV,     IVM_R_DIV,      "IVM.R.Div",        "div")\
-    X(  -0x104, false,  OP_MOD,     IVM_R_MOD,      "IVM.R.Mod",        "mod")\
+    X(  -0x104, false,  OP_DIV,     IVM_R_DIV,      "IVM.R.Div",        "div")\
+    X(  -0x105, false,  OP_MOD,     IVM_R_MOD,      "IVM.R.Mod",        "mod")\
+    \
+    X(  -0x107, false,  OP_LSH,     IVM_R_LSH,      "IVM.R.Lsh",        "lsh")\
+    X(  -0x108, false,  OP_RSH,     IVM_R_RSH,      "IVM.R.Rsh",        "rsh")\
+    X(  -0x109, false,  OP_OR,      IVM_R_OR,       "IVM.R.Or",         "or")\
+    X(  -0x10a, false,  OP_AND,     IVM_R_AND,      "IVM.R.And",        "and")\
+    X(  -0x10b, false,  OP_XOR,     IVM_R_XOR,      "IVM.R.Xor",        "xor")\
     \
     X(  -0x110, false,  OP_EQ,      IVM_R_EQ,       "IVM.R.Eq",         "eq")\
     X(  -0x111, false,  0,          IVM_R_ISZERO,   "IVM.R.IsZero",     "iszero")\

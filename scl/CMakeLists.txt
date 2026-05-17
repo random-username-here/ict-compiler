@@ -1,7 +1,7 @@
 project(scl-lang)
 
 add_library(scl-lang MODULE 
-    src/ast/expr.cpp src/ast/block.cpp src/ast/type.cpp src/ast/module.cpp
+    src/ast/basic.cpp src/ast/expr.cpp src/ast/block.cpp src/ast/type.cpp src/ast/module.cpp
     src/parser/expr.cpp src/parser/block.cpp src/parser/type.cpp src/parser/module.cpp
     src/pass/scopes.cpp src/pass/types.cpp
     src/irgen.cpp src/mod.cpp

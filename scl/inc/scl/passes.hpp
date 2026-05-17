@@ -11,13 +11,14 @@
 
 namespace scl {
 
-
 void resolveScopes(Statement *stmnt, Scope *parent);
 void resolveScopes(Expr *expr, Scope *parent);
 void resolveScopes(Module *mod, Scope *parent);
+void resolveScopes(Type *type, Scope *parent);
 
-void resolveTypes(Statement *smnt);
+void resolveTypes(Statement *smnt, Function *inside);
 void resolveTypes(Expr *expr);
 void resolveTypes(Module *mod);
+void resolveTypes(Type *type);
 
 };

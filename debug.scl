@@ -1,0 +1,31 @@
+func print_number(n int64) void;
+func print_char(n int64) void;
+func print_cstring(s *int8) void;
+
+var CONSTANT const int64 = 123;
+
+func strlen(str *int8) int64 {
+    var len = 0;
+    while (*str) {
+        str = str + 1; // TODO: increments & inplace
+        len = len + 1;
+    }
+    return len;
+}
+
+func main() void {
+    var hello = "Strings are fully working now!\n";
+    print_cstring(hello);
+
+    print_cstring("That string's length was ");
+    print_number(strlen(hello));
+    print_cstring(", as computed by strlen()\n");
+
+    print_cstring("A global CONSTANT is equal to ");
+    print_number(CONSTANT);
+    print_cstring(" and has address ");
+    print_number(&CONSTANT);
+    print_cstring("\n");
+}
+
+

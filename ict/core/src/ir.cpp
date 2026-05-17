@@ -5,7 +5,9 @@
 #include "misclib/dump_stream.hpp"
 #include <cassert>
 #include <cstdint>
+#include <iomanip>
 #include <ostream>
+#include <sstream>
 
 using namespace misc::color;
 
@@ -20,13 +22,29 @@ std::ostream &operator<<(std::ostream &os, const std::vector<Tag> &tags) {
     return os;
 }
 
-FunctionDecl *Module::findFunc(View name) {
+TopDecl *Module::findDecl(View name) {
     for (auto i : decls())
         if (i->name() == name)
-            return dynamic_cast<FunctionDecl*>(i);
+            return i;
     return nullptr;
 }
-    
+
+FunctionDecl *Module::findFunc(View name) {
+    return dynamic_cast<FunctionDecl*>(findDecl(name));
+}
+
+TopDecl *Module::createString(View str) {
+    auto decl = decls().createEnd<TopDecl>();
+    decl->addTag("anon");
+    std::stringstream ss;
+    ss << "_ict_anon_str_" << decl;
+    decl->setName(ss.str());
+    auto impl = impls().createEnd<BlobImpl>(decl);
+    impl->addStr(str);
+    impl->add8(0);
+    return decl;
+}
+
 void Module::dump(std::ostream &os) const {
     os << PURPLE << BOLD << "Module " << RST << name() << "\n" << misc::beginBlock;
     os << DGRAY << "// decls:\n";
@@ -39,7 +57,29 @@ void Module::dump(std::ostream &os) const {
 }
 
 void TopDecl::dump(std::ostream &os) const {
-    os << PURPLE << "decl " << RST << BOLD << "@" << name() << RST << tags() << DGRAY << ";\n" << RST;
+    os << PURPLE << "decl " << RST << BOLD << "@" << name() << RST
+        << tags() << DGRAY << ";";
+    if (!impl())
+        os << " // decl-only";
+    os << "\n" << RST;
+}
+
+void BssImpl::dump(std::ostream &os) const {
+    os << PURPLE << "bss_impl " << RST << BOLD << "@" << decl()->name() << RST
+        << tags() << " " << YELLOW << size() << DGRAY << ";\n" << RST;
+}
+
+void BlobImpl::dump(std::ostream &os) const {
+    os << PURPLE << "blob_impl " << RST << BOLD << "@" << decl()->name() << RST
+        << tags() << " " << CYAN << "i8" << YELLOW << misc::beginBlock;
+    std::ios save(nullptr);
+    save.copyfmt(os);
+    for (size_t i = 0; i < blob().size(); ++i) {
+        if (i % 16 == 0) os << "\n";
+        os << " 0x" << std::setw(2) << std::hex << std::setfill('0') << (int) blob()[i];
+    }
+    os.copyfmt(save);
+    os << RST << misc::endBlock << ";\n" << RST;
 }
 
 UPtr<ArgDecl> FunctionDecl::l_toArg(UPtr<Type> &&t) {
@@ -189,11 +229,10 @@ UPtr<Type> Operation::l_createRt() {
         case OP_CONST: 
         case OP_LOAD:
             return tparam().get() ? tparam()->clone() : Type::i64_t();
-        case OP_ADD:
-        case OP_SUB:
-        case OP_DIV:
-        case OP_MUL:
-        case OP_MOD:
+        case OP_ADD: case OP_SUB:
+        case OP_DIV: case OP_MUL: case OP_MOD:
+        case OP_LSH: case OP_RSH:
+        case OP_AND: case OP_OR: case OP_XOR:
             if (tparam().get()) return tparam()->clone();
             return arg_v(0)->ptr()->returnType()->clone();
         case OP_LT: case OP_GT: case OP_GE:

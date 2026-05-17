@@ -1,16 +1,25 @@
 #include "misclib/parse.hpp"
+#include "scl/ast/block.hpp"
 #include "scl/ast/expr.hpp"
+#include "scl/ast/module.hpp"
 #include "scl/ast/type.hpp"
 #include "scl/passes.hpp"
 #include "misclib/dump_stream.hpp"
 #include <sstream>
 namespace scl {
 
+// TODO: check const qualifiers
+
 static void l_checkAndAddCast(Expr *expr, Type *to, misc::Token ref) {
     if (expr->type()->isVoid())
         goto bad_cvt;
-    // ptr <-> i64 <-> bool are good
-    // TODO: add cast
+    // ptr <-> ints <-> bool are good
+    if (to->isBool() && !expr->type()->isBool()) {
+        auto slot = expr->slot();
+        auto cmp = Binary::create(BIN_NEQ, slot->replace(nullptr), Number::create(0));
+        resolveTypes(cmp.get());
+        slot->replace(std::move(cmp));
+    }
     return;
 bad_cvt:
     std::ostringstream s;
@@ -37,6 +46,8 @@ static UPtr<Type> l_binaryResult(Binary *bin) {
             // else fallthrough
         case BIN_MUL:
         case BIN_DIV: case BIN_MOD:
+        case BIN_LSH: case BIN_RSH:
+        case BIN_BOR: case BIN_BAND: case BIN_BXOR:
         space_converted_to_mul:
             if (!bin->left()->type()->isInteger() || !bin->right()->type()->isInteger())
                 goto bad_op;
@@ -61,7 +72,7 @@ static UPtr<Type> l_binaryResult(Binary *bin) {
             }
             throw misc::SourceError(bin->token(), "Can only assign to variables or deref-expressions");
         case BIN_SPACE:
-            if (bin->right()->type()->isInteger() || bin->left()->type()->isInteger()) {
+            if (bin->left()->type()->isInteger()) {
                 bin->setKind(BIN_MUL);
                 goto space_converted_to_mul;
             }
@@ -86,7 +97,12 @@ static UPtr<Type> l_binaryResult(Binary *bin) {
 
 bad_op:
     std::ostringstream s;
-    s << "Cannot perform `" << *bin->left()->type() << " " << bin->token().view << " " << *bin->right()->type() << "`";
+    s << "Cannot perform `" << *bin->left()->type() << " ";
+    if (bin->token().view.data() != nullptr)
+        s << bin->token().view;
+    else
+        s << binKind2str(bin->kind());
+    s << " " << *bin->right()->type() << "`";
     throw misc::SourceError(bin->token(), s.str());
 }
 
@@ -131,6 +147,10 @@ void resolveTypes(Expr *expr) {
         name->type() = name->decl()->type()->copy();
     } else if (auto num = dynamic_cast<Number*>(expr)) {
         num->type() = PrimitiveType::create(PrimitiveType::INT64);
+    } else if (auto str = dynamic_cast<String*>(expr)) {
+        auto chartype = PrimitiveType::create(PrimitiveType::INT8);
+        chartype->setConst(true);
+        str->type() = PointerType::create(std::move(chartype));
     } else if (auto pack = dynamic_cast<ArgPack*>(expr)) {
         pack->type() = PackType::create(); // TODO: tuples
     } else {
@@ -138,16 +158,18 @@ void resolveTypes(Expr *expr) {
     }
 }
 
-void resolveTypes(Statement *stmnt) {
+void resolveTypes(Statement *stmnt, Function *func) {
     if (auto blk = dynamic_cast<Block*>(stmnt)) {
         for (auto i : blk->items())
-            resolveTypes(i);
+            resolveTypes(i, func);
     } else if (auto expr = dynamic_cast<ExprInBlock*>(stmnt)) {
         resolveTypes(expr->expr().get());
     } else if (auto decl = dynamic_cast<VarDeclStatement*>(stmnt)) {
         for (auto i : decl->decls()) {
             if (i->initExpr())
                 resolveTypes(i->initExpr().get());
+            if (i->type())
+                resolveTypes(i->type().get());
             if (!i->initExpr() && !i->type())
                 throw misc::SourceError(i->token(), "No type specified and no initializer expression to deduce type from");
             else if (!i->type())
@@ -164,8 +186,22 @@ void resolveTypes(Statement *stmnt) {
         auto b = PrimitiveType(PrimitiveType::BOOL);
         resolveTypes(ifelse->cond().get());
         l_checkAndAddCast(ifelse->cond().get(), &b, ifelse->token());
-        resolveTypes(ifelse->then().get());
-        resolveTypes(ifelse->otherwise().get());
+        resolveTypes(ifelse->then().get(), func);
+        if (ifelse->otherwise())
+            resolveTypes(ifelse->otherwise().get(), func);
+    } else if (auto ret = dynamic_cast<ReturnStatement*>(stmnt)) {
+        if (ret->expr() && func->returnType()->isVoid())
+            throw misc::SourceError(ret->token(), "Cannot return value from void function");
+        if (!ret->expr() && !func->returnType()->isVoid())
+            throw misc::SourceError(ret->token(), "Must return something in non-void function");
+        if (ret->expr())
+            resolveTypes(ret->expr().get());
+        l_checkAndAddCast(ret->expr().get(), func->returnType().get(), ret->token());
+    } else if (auto whl = dynamic_cast<While*>(stmnt)) {
+        auto b = PrimitiveType(PrimitiveType::BOOL);
+        resolveTypes(whl->cond().get());
+        l_checkAndAddCast(whl->cond().get(), &b, whl->token());
+        resolveTypes(whl->body().get(), func);
     } else {
         throw std::runtime_error("Unknown statement type");
     }
@@ -174,9 +210,40 @@ void resolveTypes(Statement *stmnt) {
 void resolveTypes(Module *mod) {
     for (auto i : mod->entries()) {
         if (auto func = dynamic_cast<Function*>(i)) {
+            resolveTypes(func->returnType().get());
+            for (auto i : func->args())
+                resolveTypes(i->type().get());
             if (func->body())
-                resolveTypes(func->body().get());
+                resolveTypes(func->body().get(), func);
+        } else if (auto td = dynamic_cast<TypeDef*>(i)) {
+            resolveTypes(td->aliasedType().get());
+        } else if (auto gvb = dynamic_cast<GlobalVarBlock*>(i)) {
+            for (auto v : gvb->vars()) {
+                resolveTypes(v->type().get());
+                if (v->initExpr())
+                    resolveTypes(v->initExpr().get());
+                if (!v->type()) {
+                    if (v->initExpr())
+                        v->type() = v->initExpr()->type()->copy();
+                    else
+                        throw misc::SourceError(v->token(), "No type specified and no initializer to infer type from");
+                } else if (v->initExpr()) {
+                    l_checkAndAddCast(v->initExpr().get(), v->type().get(), v->token());
+                }
+            }
         }
+    }
+}
+
+void resolveTypes(Type *type) {
+    if (auto named = dynamic_cast<NamedType*>(type)) {
+        named->resolved() = named->decl()->aliasedType()->copy();
+    } else if (auto ptr = dynamic_cast<PointerType*>(type)) {
+        resolveTypes(ptr->to().get());
+    } else if (auto func = dynamic_cast<FunctionType*>(type)) {
+        resolveTypes(func->returnType().get());
+        for (auto i : func->args())
+            resolveTypes(i);
     }
 }
 

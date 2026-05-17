@@ -2,6 +2,7 @@
 #include "misclib/dump_stream.hpp"
 #include "misclib/parse.hpp"
 #include "scl/ast/expr.hpp"
+#include <cstdint>
 #include <initializer_list>
 
 #define TAG "scl.parse"
@@ -25,12 +26,28 @@ static UPtr<Expr> l_maybeMakePack(UPtr<Expr> &&expr) {
 
 UPtr<Expr> parseExprItem(View &source) {
     auto tok = misc::tokenize(source, misc::TOKF_NONE);
-    misc::verb(TAG) << "ParseExprItem first token " << (char) tok.type << " `" << tok.view << "`\n";
-    if (tok.type == misc::TOK_NUM) {
+    //misc::verb(TAG) << "ParseExprItem first token " << (char) tok.type << " `" << tok.view << "`\n";
+    if (tok.type == misc::TOK_CHAR) {
+        auto sv = tok.decodeStr();
+        misc::verb(TAG) << "str `" << sv << "` -- " << sv.size() << '\n';
+        if (sv.size() > 8)
+            throw misc::SourceError(tok, "Characters are at maximum 8 bytes long");
+        uint64_t v = 0;
+        for (size_t i = 0; i < sv.size(); ++i)
+            v += ((uint64_t) sv[i]) << (8 * i);
+        return scl::Number::create(v);
+    } else if (tok.type == misc::TOK_STR) {
+        return scl::String::create(tok);
+    } else if (tok.type == misc::TOK_NUM) {
         return scl::Number::create(tok);
     } else if (tok.type == misc::TOK_NAME) {
         return scl::Name::create(tok);
     } else if (tok.type == '(') {
+        auto t = misc::tokenize(source, misc::TOKF_NONE, &tok);
+        if (tok.type == ')') {
+            source = t;
+            return ArgPack::create(tok);
+        }
         auto v = l_maybeMakePack(parseExpr(source, misc::TOK_RBRACE));
         auto ebrace = misc::tokenize(source, misc::TOKF_NONE);
         if (ebrace.type == misc::TOK_EOF)
@@ -68,6 +85,9 @@ static const OpDef l_ops[] = {
     { OT_BIN | OT_LAS, "+", BIN_ADD, 6 },
     { OT_BIN | OT_LAS, "-", BIN_SUB, 6 },
     
+    { OT_BIN | OT_LAS, ">>", BIN_RSH, 7 },
+    { OT_BIN | OT_LAS, "<<", BIN_LSH, 7 },
+    
     { OT_BIN | OT_LAS, "<", BIN_LT, 9 },
     { OT_BIN | OT_LAS, ">", BIN_GT, 9 },
     { OT_BIN | OT_LAS, "<=", BIN_LE, 9 },
@@ -75,6 +95,10 @@ static const OpDef l_ops[] = {
 
     { OT_BIN | OT_LAS, "==", BIN_EQ, 10 },
     { OT_BIN | OT_LAS, "!=", BIN_NEQ, 10 },
+    
+    { OT_BIN | OT_LAS, "&", BIN_BAND, 11 },
+    { OT_BIN | OT_LAS, "^", BIN_BXOR, 12 },
+    { OT_BIN | OT_LAS, "|", BIN_BOR, 13 },
     
     { OT_BIN | OT_RAS, "=", BIN_ASSIGN, 16 },
 
@@ -92,7 +116,7 @@ static const OpDef *l_findOp(View s, bool unary) {
 
 void l_unstackOp(std::vector<UPtr<Expr>> &valStack, std::vector<const OpDef*> &opStack, std::vector<misc::Token> &opTokStack) {
     auto top = opStack.back();
-    misc::verb(TAG) << "Unstack " << top->text << "\n";
+    //misc::verb(TAG) << "Unstack " << top->text << "\n";
     if (top->flags & OT_UNR) {
         auto v = std::move(valStack.back());
         valStack.pop_back();
@@ -121,7 +145,7 @@ UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> termin
     View pos = misc::tokenize(source, misc::TOKF_NONE, &tok);
     bool unaryExpected = true;
     while (!l_initListHas(terminal, tok.type)) {
-        misc::verb(TAG) << "ParseExpr token " << (char) tok.type << " `" << tok.view << "`, ue = " << unaryExpected << "\n";
+        //misc::verb(TAG) << "ParseExpr token " << (char) tok.type << " `" << tok.view << "`, ue = " << unaryExpected << "\n";
         if (tok.type == misc::TOK_OP || tok.type == ',') {
             source = pos;
             auto def = l_findOp(tok.view, unaryExpected);
@@ -149,7 +173,7 @@ UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> termin
         throw misc::SourceError(tok, "Value expected afterwards");
     while (!opStack.empty())
         l_unstackOp(valStack, opStack, opTokStack);
-    misc::verb(TAG) << "ParseExpr end, vs has " << valStack.size() << " items\n";
+    //misc::verb(TAG) << "ParseExpr end, vs has " << valStack.size() << " items\n";
     return valStack.empty() ? nullptr : std::move(valStack[0]);
 }
 

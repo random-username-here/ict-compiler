@@ -1,3 +1,4 @@
+#include "scl/ast/module.hpp"
 #include "misclib/parse.hpp"
 #include "scl/ast/type.hpp"
 #include "scl/parsing.hpp"
@@ -8,43 +9,34 @@ static void l_parseFunc(View &source, Module *into) {
     auto name = misc::tokenize(source, misc::TOKF_NONE);
     if (name.type != misc::TOK_NAME)
         throw misc::SourceError(name, "Function name expected");
+    
     auto obrace = misc::tokenize(source, misc::TOKF_NONE);
     if (obrace.type != '(')
         throw misc::SourceError(obrace, "Function argument list expected (obrace)");
+    
     auto func = Function::create(name);
-    while (1) {
-        auto name = misc::tokenize(source, misc::TOKF_NONE);
-        if (name.type == ')') break;
-        if (name.type != misc::TOK_NAME)
-            throw misc::SourceError(name, "Argument name expected");
-        misc::Token tok;
-        auto v = misc::tokenize(source, misc::TOKF_NONE, &tok);
-        UPtr<Type> type = nullptr;
-        if (tok.type != ',' && tok.type != ')') {
-            type = parseType(source);
-            v = misc::tokenize(source, misc::TOKF_NONE, &tok);
-        } else {
-            if (func->args().size() == 0)
-                throw misc::SourceError(name, "Argument type can be ommited only when there is arg before to take type from");
-            type = func->args().last()->type()->copy();
-        }
+
+    parseVarDeclLike(source, misc::TOK_COMMA, misc::TOK_RBRACE,
+            [&func](misc::Token name, UPtr<Type> &&type, UPtr<Expr> &&initializer){
+        if (initializer)
+            throw misc::SourceError(name, "Default-valued arguments are not supported yet");
         func->args().createEnd(name, std::move(type));
-        source = v;
-        if (tok.type == ')')
-            break;
-        else if (tok.type == ',')
-            continue;
-        else
-            throw misc::SourceError(tok, "Expected `)` or `,` in argument list");
-    }
-    func->returnType() = parseType(source);
-    func->genDeclType();
+    });
+    auto cbrace = misc::tokenize(source, misc::TOKF_NONE);
+    if (cbrace.type != ')')
+        throw misc::SourceError(cbrace, "Expected argument list to be closed here");
+
     misc::Token tok;
     auto v = misc::tokenize(source, misc::TOKF_NONE, &tok);
     if (tok.type != '{' && tok.type != ';') {
-        func->type() = parseType(source);
+        func->returnType() = parseType(source);
         v = misc::tokenize(source, misc::TOKF_NONE, &tok);
+    } else {
+        func->returnType() = PrimitiveType::create(PrimitiveType::VOID);
     }
+
+    func->genDeclType();
+
     if (tok.type == ';')
         source = v;
     else
@@ -60,6 +52,25 @@ bool parseTopLevel(View &source, Module *into) {
         throw misc::SourceError(tok, "Expected a top-level keyword");
     if (tok.view == "func") {
         l_parseFunc(source, into);
+    } else if (tok.view == "type") {
+        auto name = misc::tokenize(source, misc::TOKF_NONE);
+        if (name.type != misc::TOK_NAME)
+            throw misc::SourceError(name, "New type's name expected");
+        auto t = parseType(source);
+        auto end = misc::tokenize(source, misc::TOKF_NONE);
+        if (end.type != ';')
+            throw misc::SourceError(end, "`;` expected after typedef");
+        into->entries().createEnd<TypeDef>(name, std::move(t));
+    } else if (tok.view == "var") {
+        auto decl = GlobalVarBlock::create();
+        parseVarDeclLike(source, misc::TOK_COMMA, misc::TOK_SEMICOL,
+                [&decl](misc::Token name, UPtr<Type> &&type, UPtr<Expr> &&init){
+            decl->vars().createEnd(name, std::move(type), std::move(init));
+        });
+        auto end = misc::tokenize(source, misc::TOKF_NONE);
+        if (end.type != ';')
+            throw misc::SourceError(end, "`;` expected after variable declaration");
+        into->entries().push(std::move(decl));
     } else {
         throw misc::SourceError(tok, "Function expected");
     }

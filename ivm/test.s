@@ -13,6 +13,10 @@ setup_stack:
     ssf
     ret
 
+helloworld_str:
+    .ascii "Hello world!\n\0"
+    
+
 .include "printer.s"
 .const __ict.debugPrintInt print_number
 .const __ict.debugPrintChar print_char

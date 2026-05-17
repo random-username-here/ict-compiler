@@ -33,12 +33,22 @@ public:
     void dump(std::ostream &os) const override;
 };
 
-
 class ExprInBlock : public Statement {
     misc::Slot<ExprInBlock, Expr> m_expr;
 public:
     ExprInBlock(misc::Token tok, misc::UPtr<Expr> &&e) :Statement(tok), m_expr(this, std::move(e)) {}
     MISC_CREATEFUNC(ExprInBlock);
+
+    auto &expr() { return m_expr; }
+    auto &expr() const { return m_expr; }
+    void dump(std::ostream &os) const override;
+};
+
+class ReturnStatement : public Statement {
+    misc::Slot<ReturnStatement, Expr> m_expr;
+public:
+    ReturnStatement(misc::Token tok, misc::UPtr<Expr> &&e) :Statement(tok), m_expr(this, std::move(e)) {}
+    MISC_CREATEFUNC(ReturnStatement);
 
     auto &expr() { return m_expr; }
     auto &expr() const { return m_expr; }
@@ -65,9 +75,8 @@ public:
         :m_initExpr(this, std::move(init)), LocalDecl(name, std::move(type)) {}
     MISC_CREATEFUNC(VarDecl);
 
-    auto &initExpr() { return m_initExpr; }
-    auto &initExpr() const { return m_initExpr; }
-    void dump(std::ostream &os) const override;
+    auto &initExpr() { return m_initExpr; } auto &initExpr() const { return m_initExpr; }
+    void dump(std::ostream &os) const;
 };
 
 class IfElse : public Statement {
@@ -85,6 +94,22 @@ public:
     auto &then() const { return m_then; }
     auto &otherwise() { return m_otherwise; }
     auto &otherwise() const { return m_otherwise; }
+    void dump(std::ostream &os) const override;
+};
+
+class While : public Statement {
+    misc::Slot<While, Expr> m_cond;
+    misc::Slot<While, Statement> m_body;
+public:
+    While(misc::Token tok, UPtr<Expr> &&cond, UPtr<Statement> &&body)
+        :Statement(tok), m_cond(this, std::move(cond)), m_body(this, std::move(body)) {}
+    MISC_CREATEFUNC(While);
+
+    auto &cond() { return m_cond; }
+    auto &cond() const { return m_cond; }
+    auto &body() { return m_body; }
+    auto &body() const { return m_body; }
+
     void dump(std::ostream &os) const override;
 };
 

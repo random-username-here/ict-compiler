@@ -19,7 +19,11 @@ bool numberIsIntegral(Number n) {
 void SourceError::writeFormatted(std::ostream &out, std::string_view filename,
         View contents) const {
 
-    // TODO: a prettier algorithm
+    if (m_where.data() == nullptr) {
+        out << RED << BOLD << "error: " << RST << RED << m_what << RST << "\n";
+        out << DGRAY << "(reference token is nullptr, cannot match to source)\n" << RST;
+        return;
+    }
     assert(contents.data() <= m_where.data());
     assert(m_where.data() <= contents.data() + contents.size());
 
@@ -103,19 +107,19 @@ static View takeWhile(View view, bool (*predicate)(char ch), TokenType type, Tok
     return takeToken(view, cnt, type, tok);
 }
 
-static View takeString(View view, Token *tok) {
+static View takeString(View view, Token *tok, char sym) {
     assert(!view.empty());
-    assert(view[0] == '"');
+    assert(view[0] == sym);
     
     size_t cnt = 1;
     bool esc = false;
     while (cnt < view.size()) {
         if (esc) esc = false;
         else if (view[cnt] == '\\') esc = true;
-        else if (view[cnt] == '"') break;
+        else if (view[cnt] == sym) break;
         ++cnt;
     }
-    return takeToken(view, cnt+1, TOK_STR, tok);
+    return takeToken(view, cnt+1, (TokenType) sym, tok);
 }
 
 static bool isNumber(char ch) {
@@ -141,7 +145,7 @@ static bool isOperator(char ch) {
         case '<': case '>':
         case '&': case '|':
         case '~': case '!':
-        case '^':
+        case '^': case '%':
             return true;
         default:
             return false;
@@ -184,7 +188,8 @@ View tokenize(View view, int flags, Token *tok) {
         case '\n':
             return takeToken(view, 1, (TokenType) view[0], tok);
         case '"':
-            return takeString(view, tok);
+        case '\'':
+            return takeString(view, tok, view[0]);
         case '0'...'9':
             return takeWhile(view, isNumber, TOK_NUM, tok);
         case '.': case '@':
@@ -243,8 +248,9 @@ static int hexdec(char ch) {
 }
 
 std::string Token::decodeStr() const {
+    assert(type == TOK_CHAR || type == TOK_STR);
     std::string res;
-    for (size_t i = 0; i < view.size(); ++i) {
+    for (size_t i = 1; i < view.size()-1; ++i) {
         if (view[i] == '\\') {
             if (i == view.size() - 1) break;
             char ch = view[i+1];

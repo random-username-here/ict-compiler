@@ -118,10 +118,10 @@ public:
                 op->args().push(ict::ConstArg::create(val));
             } else if (tok.type == misc::TOK_NAME) {
                 if (tok.view[0] == '@') {
-                    auto func = op->parent()->parent()->parent()->findFunc(tok.view.substr(1));
-                    if (!func)
-                        throw misc::SourceError(tok, "Unknown function");
-                    op->args().push(ict::GlobalArg::create(func));
+                    auto decl = op->parent()->parent()->parent()->findDecl(tok.view.substr(1));
+                    if (!decl)
+                        throw misc::SourceError(tok, "Unknown decl");
+                    op->args().push(ict::GlobalArg::create(decl));
                 } else if (tok.view[0] == '%') {
                     auto name = tok.view.substr(1);
                     if (bnt.count(name)) {
@@ -265,6 +265,33 @@ public:
         mod->decls().insertBefore(nullptr, std::move(decl));
     }
 
+    void declareSomething(ict::Module *mod, View &source) const {
+        auto name = misc::tokenize(source, misc::TOKF_DOTNAME);
+        if (name.type != misc::TOK_NAME || name.view[0] != '@')
+            throw misc::SourceError(name, "Expected declaration name");
+        auto decl = mod->decls().createEnd<ict::TopDecl>(name.view.substr(1));
+        eatTags(source, decl);
+        auto punct = misc::tokenize(source, misc::TOKF_NONE);
+        if (punct.type != ';')
+            throw misc::SourceError(punct, "Expected `;` after declaration");
+    }
+
+    void implementBss(ict::Module *mod, View &source) const {
+        auto name = misc::tokenize(source, misc::TOKF_DOTNAME);
+        if (name.type != misc::TOK_NAME || name.view[0] != '@')
+            throw misc::SourceError(name, "Expected declaration name");
+        auto decl = mod->findDecl(name.view.substr(1));
+        if (!decl)
+            throw misc::SourceError(name, "Unknown declaration named in bss_impl");
+        auto size = misc::tokenize(source, misc::TOKF_DOTNAME);
+        if (size.type != misc::TOK_NUM)
+            throw misc::SourceError(name, "Expected variable size");
+        auto impl = mod->impls().createEnd<ict::BssImpl>(decl, size.decodeNum());
+        auto punct = misc::tokenize(source, misc::TOKF_NONE);
+        if (punct.type != ';')
+            throw misc::SourceError(punct, "Expected `;` after bss impl");
+    }
+
     bool compile(ict::Manager *mgr, ict::Module *mod) const override {
         misc::info(TAG) << "Parsing " << misc::ACCENT << mgr->filename() << misc::RST << '\n';
         View source = mgr->source();
@@ -276,12 +303,16 @@ public:
                     break;
                 if (tok.type != misc::TOK_NAME)
                     throw misc::SourceError(tok, "Expected a directive");
-                if (tok.view == "func_decl")
+                if (tok.view == "decl")
+                    declareSomething(mod, source);
+                else if (tok.view == "bss_impl")
+                    implementBss(mod, source);
+                else if (tok.view == "func_decl")
                     declareFunction(mod, source);
                 else if (tok.view == "func_impl")
                     implementFunction(mod, source);
                 else
-                    throw misc::SourceError(tok, "Unknown directive, expected `func_impl` or `func_decl`.");
+                    throw misc::SourceError(tok, "Unknown directive");
             }
         } catch (misc::SourceError &e) {
             auto msg = misc::error(TAG);

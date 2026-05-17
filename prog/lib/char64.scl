@@ -1,0 +1,12 @@
+///
+/// char64.scl -- char64_t type, for bare bones strings
+///
+include once;
+include "printer.scl";
+
+type char64_t int64;
+
+func print_char64(c char64_t) void {
+    while (c) print_char(c & 0xff), c >>= 8;
+}
+

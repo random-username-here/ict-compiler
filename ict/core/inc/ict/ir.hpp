@@ -98,6 +98,8 @@ public:
     auto &impls() const { return m_impls; }
     View name() const { return m_name; }
 
+    TopDecl *findDecl(View name);
+
     /** Find function with given name */
     FunctionDecl *findFunc(View name);
 
@@ -107,6 +109,8 @@ public:
      */
     template<typename ...Args>
     FunctionDecl *findOrDeclareFunc(View name, UPtr<Type> &&rt, Args &&...args);
+
+    TopDecl *createString(View str);
 
     /** Check if module has correct code */
     bool verify() const;
@@ -132,6 +136,7 @@ class TopDecl :
 public:
     TopDecl() :m_name("") {}
     TopDecl(View name) :m_name(name) {}
+    MISC_CREATEFUNC(TopDecl);
     
     View name() const { return m_name; }
     void setName(View n) { m_name = n; }
@@ -155,6 +160,45 @@ public:
     TopDecl *decl() { return m_decl; }
     const TopDecl *decl() const { return m_decl; }
     virtual void dump(std::ostream &os) const = 0;
+};
+
+/**
+ * Implementation of a zeroed global variable
+ */
+class BssImpl : 
+        public TopImpl
+{
+    size_t m_size = 0;
+public:
+    BssImpl(TopDecl *decl, size_t size) :TopImpl(decl), m_size(size) {}
+    MISC_CREATEFUNC(BssImpl);
+
+    size_t size() const { return m_size; }
+    virtual void dump(std::ostream &os) const;
+};
+
+/**
+ * Implementation as a constant blob
+ * TODO: maybe support refs to other globals in there?
+ */
+class BlobImpl :
+        public TopImpl
+{
+    std::string m_blob;
+public:
+    BlobImpl(TopDecl *decl) :TopImpl(decl) {}
+    MISC_CREATEFUNC(BlobImpl);
+
+    View blob() const { return m_blob; }
+    void setBlob(View v) { m_blob = v; }
+
+    void add8(Integer i) { m_blob.push_back(i & 0xff); } 
+    void add16(Integer i) { add8(i); add8(i >> 8); } 
+    void add32(Integer i) { add16(i); add16(i >> 16); } 
+    void add64(Integer i) { add32(i); add32(i >> 32); } 
+    void addStr(View v) { m_blob += v; }
+
+    virtual void dump(std::ostream &os) const;
 };
 
 /**

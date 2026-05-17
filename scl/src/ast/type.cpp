@@ -6,32 +6,74 @@ using namespace misc::color;
 
 namespace scl {
 
+void Type::dumpQualifiers(std::ostream &os) const {
+    if (isConst())
+        os << YELLOW << "const " << RST;
+}
+
 bool Type::isInteger() const {
-    auto p = dynamic_cast<const PrimitiveType*>(this);
-    return p && p->kind() == PrimitiveType::INT64;
+    auto p = dynamic_cast<const PrimitiveType*>(unwrapNamed());
+    if (!p) return false;
+    switch (p->kind()) {
+        case PrimitiveType::INT8: case PrimitiveType::INT16:
+        case PrimitiveType::INT32: case PrimitiveType::INT64:
+            return true;
+        default:
+            return false;
+    }
 }
 
 bool Type::isVoid() const {
-    auto p = dynamic_cast<const PrimitiveType*>(this);
+    auto p = dynamic_cast<const PrimitiveType*>(unwrapNamed());
     return p && p->kind() == PrimitiveType::VOID;
 }
 
+bool Type::isBool() const {
+    auto p = dynamic_cast<const PrimitiveType*>(unwrapNamed());
+    return p && p->kind() == PrimitiveType::BOOL;
+}
+
 bool Type::isPointer() const {
-    auto p = dynamic_cast<const PointerType*>(this);
+    auto p = dynamic_cast<const PointerType*>(unwrapNamed());
     return p != nullptr;
 }
 bool Type::isFunction() const {
-    auto f = dynamic_cast<const FunctionType*>(this);
+    auto f = dynamic_cast<const FunctionType*>(unwrapNamed());
     return f != nullptr;
 }
 bool Type::isFunctionPtr() const {
-    auto p = dynamic_cast<const PointerType*>(this);
+    auto p = dynamic_cast<const PointerType*>(unwrapNamed());
     return p != nullptr && p->to()->isFunction();
 }
 
 bool Type::isPack() const {
-    auto p = dynamic_cast<const PackType*>(this);
+    auto p = dynamic_cast<const PackType*>(unwrapNamed());
     return p != nullptr;
+}
+
+bool Type::isType() const {
+    auto p = dynamic_cast<const TypeType*>(unwrapNamed());
+    return p != nullptr;
+}
+
+bool Type::isNamed() const {
+    auto p = dynamic_cast<const NamedType*>(this);
+    return p != nullptr;
+}
+
+const Type *Type::unwrapNamed() const {
+    auto t = this;
+    while (1) {
+        auto n = dynamic_cast<const NamedType*>(t);
+        if (!n) break;
+        if (!n->isResolved()) break;
+        t = n->resolved().get();
+    }
+    return t;
+}
+
+bool Type::areSame(const Type *a, const Type *b) {
+    return a->unwrapNamed()->isSameAs(b->unwrapNamed());
 }
 
 size_t PrimitiveType::byteSize() const {
@@ -56,6 +98,7 @@ SCL_FOR_EACH_TYPE(X)
 }
 
 void PrimitiveType::dump(std::ostream &os) const {
+    dumpQualifiers(os);
     os << CYAN;
 #define X(id, sn, sz, ic) if (m_kind == id) os << sn;
 SCL_FOR_EACH_TYPE(X)
@@ -77,16 +120,18 @@ bool PrimitiveType::isSameAs(const Type *other) const {
 }
 
 void PointerType::dump(std::ostream &os) const {
+    dumpQualifiers(os);
     os << BLUE << "*" << RST << *to();
 }
  
 bool PointerType::isSameAs(const Type *other) const {
     auto p = dynamic_cast<const PointerType*>(other);
     if (!p) return false;
-    return p->to()->isSameAs(to().get());
+    return Type::areSame(p->to().get(), to().get());
 }   
 
 void FunctionType::dump(std::ostream &os) const {
+    dumpQualifiers(os);
     os << RED << "func " << DGRAY << "(" << RST;
     for (size_t i = 0; i < args().size(); ++i) {
         if (i != 0) os << DGRAY << ", " << RST;
@@ -98,10 +143,10 @@ void FunctionType::dump(std::ostream &os) const {
 bool FunctionType::isSameAs(const Type *other) const {
     auto f = dynamic_cast<const FunctionType*>(other);
     if (!f) return false;
-    if (!f->returnType()->isSameAs(returnType().get())) return false;
+    if (!Type::areSame(f->returnType().get(), returnType().get())) return false;
     if (f->args().size() != args().size()) return false;
     for (size_t i = 0; i < args().size(); ++i)
-        if (!f->args()[i]->isSameAs(args()[i])) return false;
+        if (!Type::areSame(f->args()[i], args()[i])) return false;
     return true;
 }
 
@@ -110,7 +155,31 @@ void PackType::dump(std::ostream &os) const {
 }
 
 bool PackType::isSameAs(const Type *o) const {
-    return dynamic_cast<const PackType*>(o) != nullptr;
+    return o->isPack();
+}
+
+void TypeType::dump(std::ostream &os) const {
+    os << RED << "type" << RST;
+}
+
+bool TypeType::isSameAs(const Type *o) const {
+    return o->isType();
+}
+
+void NamedType::dump(std::ostream &os) const {
+    dumpQualifiers(os);
+    os << RED << "type " << CYAN << name() << RST;
+    if (isResolved())
+        os << BLUE << "(" << RST << *resolved() << BLUE << ")" << RST;
+    else if (decl() != nullptr)
+        os << BLUE << "(decl found)" << RST;
+    else
+        os << BLUE << "(unresolved)" << RST;
+}
+
+bool NamedType::isSameAs(const Type *o) const {
+    assert(false); // they must be unwrapped first
+    return false;
 }
 
 };

@@ -1,17 +1,19 @@
 func putInt(val int64) void;
-func putString(val *int8);
+//func putString(val *int8);
 
-func fib(n int64) {
+/*
+func fib(n int64) int64 {
     if (n <= 2)
         return 1;
     return fib(n-1) + fib(n-2);
-}
+}*/
 
 func math() void {
     var a int64 = 3, b int64 = 4;
+    if (a > b) {}
     if (a > b) {
         var c int64 = (a + b) * b * b + 6 * a;
-        var d = c != b;
+        /var d = c != b;
     } else {
         var d = a;
     }
@@ -25,8 +27,7 @@ func ptrs() void {
 }
 
 func add(a int64, b int64) int64 {
-    var sum = a + b;
-    return sum;
+    return a + b;
 }
 
 func getFuncPtr() void {

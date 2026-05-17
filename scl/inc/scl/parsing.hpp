@@ -3,6 +3,7 @@
 #include "scl/ast/expr.hpp"
 #include "scl/ast/block.hpp"
 #include "scl/ast/module.hpp"
+#include <functional>
 #include <initializer_list>
 namespace scl {
 
@@ -18,6 +19,11 @@ UPtr<Expr> parseExprItem(View &source);
 /// Parse expression until something
 UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> terminals);
 inline UPtr<Expr> parseExpr(View &source, misc::TokenType terminal) { return parseExpr(source, {terminal}); }
+
+/// Parse something like variable declarations (like `x int64 = 3, y *void`)
+/// This thing occurs frequently, for example in var decls, arguments, structs
+void parseVarDeclLike(View &source, misc::TokenType separator, misc::TokenType end, 
+        std::function<void(misc::Token name, UPtr<Type> &&type, UPtr<Expr> &&initializer)>);
 
 /// Parse one statement (expr, var decl, if, block)
 UPtr<Statement> parseStatement(View &source);

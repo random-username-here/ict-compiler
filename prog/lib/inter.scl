@@ -1,0 +1,14 @@
+///
+/// inter.scl -- Interrupt setup
+///
+include once;
+
+type inter_id_t int8;
+const INTER_TIM0 inter_id_t = 0x01;
+const INTER_KBD  inter_id_t = 0x08;
+const INTER_MDM  inter_id_t = 0x09;
+const INTER_ERR  inter_id_t = 0x0f;
+
+type inter_cb_t *func() void;
+
+func inter_add(which inter_id_t, handler inter_cb_t) void;

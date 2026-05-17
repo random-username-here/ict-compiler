@@ -22,6 +22,12 @@ ict::View binKind2str(BinaryKind k) {
         GEN(NEQ);
         GEN(SPACE);
         GEN(COMMA);
+        GEN(RSH);
+        GEN(LSH);
+        GEN(BOR);
+        GEN(BAND);
+        GEN(BXOR);
+        GEN(ASSIGN);
         default: return "(unknown)";
     }
 #undef GEN
@@ -57,6 +63,13 @@ void Unary::dump(std::ostream &os) const {
 
 void Number::dump(std::ostream &os) const {
     os << BLUE << "Number" << YELLOW << " " << val() << RST << "\n";
+}
+
+void String::dump(std::ostream &os) const {
+    os << BLUE << "String" << GREEN << " ";
+    if (token().view.data() != nullptr) os << token().view;
+    else os << "\"" << val() << "\""; // not escaped variant for some rare case when this is generated
+    os << RST << "\n";
 }
 
 void Name::dump(std::ostream &os) const {

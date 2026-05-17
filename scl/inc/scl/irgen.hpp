@@ -9,6 +9,9 @@ struct IRGenCtx {
     ict::BasicBlock *curBlock;
 
     ict::FunctionImpl *func() { return curBlock->parent(); }
+    bool blockIsEnded() const {
+        return curBlock->operations().size() && curBlock->operations().last()->isTerminal();
+    }
 };
 
 ict::Operation *irExpr(IRGenCtx *ctx, Expr *expr);

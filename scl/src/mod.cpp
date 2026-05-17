@@ -42,7 +42,6 @@ public:
             misc::info(TAG) << "Generating IR...";
             irModule(into, mod.get());
             misc::info(TAG) << "Generated IR:\n" << misc::beginBlock << *into << misc::endBlock;
-            return false;
         } catch (misc::SourceError &e) {
             auto msg = misc::error(TAG);
             e.writeFormatted(msg.stream(), mgr->filename(), mgr->source());

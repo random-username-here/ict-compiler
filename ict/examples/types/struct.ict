@@ -1,0 +1,17 @@
+///
+/// Structures demo
+///
+
+struct @vec i64 i64;
+
+func_decl @len2(%v @vec) i64;
+func_impl @len2 {
+    %xp     ElemPtr %v 0;
+    %yp     ElemPtr %v 1;
+    %x      Load[i64] %a.xp;
+    %y      Load[i64] %yp;
+    %x2     Mul %x %x;
+    %y2     Mul %y %y;
+    %res    Add %x2 %y2;
+            Ret %res;
+}

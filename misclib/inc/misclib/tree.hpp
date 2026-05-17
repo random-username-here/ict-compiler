@@ -318,18 +318,18 @@ public:
     El *createBefore(ElemType *child, Args &&...args) {
         auto o_elem = std::make_unique<El>(std::forward<Args>(args)...);
         auto ptr = o_elem.get();
-        insertBefore(child, std::move(o_elem));
+        insertBefore<El>(child, std::move(o_elem));
         return ptr;
     }
     
     template<typename El = ElemType>
     El *insertEnd(UPtr<El> &&e) {
-        return insertBefore(nullptr, std::move(e));
+        return insertBefore<El>(nullptr, std::move(e));
     }
 
     template<typename El = ElemType, typename ...Args>
     El *createEnd(Args &&...args) {
-        return createBefore(nullptr, std::forward<Args>(args)...);
+        return createBefore<El>(nullptr, std::forward<Args>(args)...);
     }
     
     UPtr<ElemType> extract(ElemType *child) {

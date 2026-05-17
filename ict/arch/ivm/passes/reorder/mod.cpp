@@ -34,6 +34,15 @@ class Reorderer : public ict::Pass {
         return isLoad(a) && isLoad(b);
     }
 
+    void pullOps(ict::Operation *op, ict::Operation *before) const {
+        before->parent()->operations().insertBefore(before, op->extractSelf());
+        if (op->kind() == ivm::IVM_TOSTACK) return;
+        for (auto i : op->args()) {
+            if (auto vreg = dynamic_cast<ict::VRegArg*>(i))
+                pullOps(vreg->ptr(), op);
+        }
+    }
+
     void reorderBlock(ict::BasicBlock *blk, Stats &stats) const {
         for (auto op : blk->operations()) {
             if (op->kind() == ivm::IVM_TOSTACK) ++stats.toStackCount;
@@ -47,7 +56,7 @@ class Reorderer : public ict::Pass {
         for (ict::Operation *toStack = blk->operations().last(); toStack != nullptr; toStack = toStack->prev()) {
             // we want to pull FromStack to ToStack, and collapse them
 
-            if (toStack->kind() != ivm::IVM_TOSTACK)
+            if (toStack->kind() != ivm::IVM_TOSTACK) // done already
                 continue;
             auto fromStack = toStack->arg_v(0)->ptr();
             if (fromStack->kind() != ivm::IVM_FROMSTACK)
@@ -74,9 +83,7 @@ class Reorderer : public ict::Pass {
             blk->operations().insertBefore(toStack, operation->extractSelf());
             for (auto i : operation->args()) {
                 if (auto vreg = dynamic_cast<ict::VRegArg*>(i)) {
-                    if (vreg->ptr()->kind() != ivm::IVM_TOSTACK)
-                        continue;
-                    blk->operations().insertBefore(operation, vreg->ptr()->extractSelf());
+                    pullOps(vreg->ptr(), operation);
                 }
             }
             // anihillate ToStack/FromStack
@@ -92,10 +99,13 @@ class Reorderer : public ict::Pass {
     void run(ict::Manager *mgr) const override {
         Stats stats;
         misc::info(TAG) << "Reorder pass doing its thing...";
-        for (auto impl : mgr->module()->impls())
-            if (auto func = dynamic_cast<ict::FunctionImpl*>(impl))
+        for (auto impl : mgr->module()->impls()) {
+            if (auto func = dynamic_cast<ict::FunctionImpl*>(impl)) {
                 for (auto block : func->blocks())
                     reorderBlock(block, stats);
+                func->invalidateAnalysis();
+            }
+        }
         misc::info(TAG) << "Found " << stats.fromStackCount << " FromStack, " 
                 << stats.toStackCount << " ToStack, " << stats.pairsFound << " single def-use pairs,\ncollapsed " 
                 << stats.delCount << " of them ==> " << 100 * stats.delCount / stats.pairsFound << "% decrease in pairs, "

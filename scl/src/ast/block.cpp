@@ -16,6 +16,10 @@ void ExprInBlock::dump(std::ostream &os) const {
     os << RED << "ExprInBlock\n" << misc::beginBlock << *expr() << misc::endBlock;
 }
 
+void ReturnStatement::dump(std::ostream &os) const {
+    os << RED << "ReturnStatement\n" << misc::beginBlock << *expr() << misc::endBlock;
+}
+
 void VarDeclStatement::dump(std::ostream &os) const {
     os << RED << "VarDeclStatement " << RST << '\n' << misc::beginBlock;
     for (auto i : decls())
@@ -44,5 +48,13 @@ void IfElse::dump(std::ostream &os) const {
         os << DGRAY << "else: " << RST << *otherwise();
     os << misc::endBlock;
 }
+
+void While::dump(std::ostream &os) const {
+    os << RED << "While " << RST << "\n" << misc::beginBlock;
+    os << DGRAY << "cond: " << RST << *cond();
+    os << DGRAY << "body: " << RST << *body();
+    os << misc::endBlock;
+}
+
 
 };

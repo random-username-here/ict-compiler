@@ -8,33 +8,52 @@
 
 namespace scl {
 
-static void l_parseVarDecl(View &source, VarDeclStatement *into) {
-    // Structure: name [type] [= expr] (, another / ;)
-    auto name = misc::tokenize(source, misc::TOKF_NONE);
+void parseVarDeclLike(
+        View &source, misc::TokenType separator, misc::TokenType end,
+        std::function<void(misc::Token name, UPtr<Type> &&type, UPtr<Expr> &&initializer)> callback
+) {
+    misc::Token name;
+    View v = misc::tokenize(source, misc::TOKF_NONE, &name);
+    if (name.type == end || name.type == misc::TOK_EOF) return;
+    source = v;
     if (name.type != misc::TOK_NAME)
-        throw misc::SourceError(name, "Variable name expected");
-    misc::verb(TAG) << "ParseVarDecl variable " << name.view;
+        throw misc::SourceError(name, "Name expected");
     misc::Token tok;
     UPtr<Type> type = nullptr;
-    View v = misc::tokenize(source, misc::TOKF_NONE, &tok);
-    if (tok.type != ';' && tok.type != ',' && tok.view != "=") {
+    v = misc::tokenize(source, misc::TOKF_NONE, &tok);
+    if (tok.type != end && tok.type != separator && tok.view != "=") {
         type = parseType(source);
-        tok = misc::tokenize(source, misc::TOKF_NONE);
-        if (tok.type != ';' && tok.type != ',' && tok.view != "=")
-            throw misc::SourceError(tok, "Expected assignment or decl end after variable type");
-    } else {
+        v = misc::tokenize(source, misc::TOKF_NONE, &tok);
+        if (tok.type != separator && tok.type != end && tok.view != "=")
+            throw misc::SourceError(tok, "Expected assignment or end after type");
+        if (tok.type != end)
+            source = v;
+    } else if (tok.type != end) {
         source = v; // eat token
     }
     misc::UPtr<Expr> initializer = nullptr;
     if (tok.view == "=") {
-        initializer = parseExpr(source, { misc::TOK_COMMA, misc::TOK_SEMICOL });
-        tok = misc::tokenize(source, misc::TOKF_NONE);
-        if (tok.type != ',' && tok.type != ';')
-            throw misc::SourceError(tok, "Expected `,` or `;` after variable initialization");
+        initializer = parseExpr(source, { separator, end });
+        v = misc::tokenize(source, misc::TOKF_NONE, &tok);
+        if (tok.type != separator && tok.type != end)
+            throw misc::SourceError(tok, "Expected next item after initializer");
+        if (tok.type != end)
+            source = v;
     }
-    into->decls().createEnd(name, std::move(type), std::move(initializer));
-    if (tok.type == ',') // another one
-        l_parseVarDecl(source, into);
+    callback(name, std::move(type), std::move(initializer));
+    if (tok.type == separator) // another one
+        parseVarDeclLike(source, separator, end, callback);
+}
+
+void parseVarDecls(View &source, VarDeclStatement *into) {
+    // this allows for stupid `var;` statement what does nothing
+    parseVarDeclLike(source, misc::TOK_COMMA, misc::TOK_SEMICOL,
+            [into](misc::Token name, UPtr<Type> &&type, UPtr<Expr> &&initializer){
+        into->decls().createEnd(name, std::move(type), std::move(initializer));
+    });
+    auto end = misc::tokenize(source, misc::TOKF_NONE);
+    if (end.type != ';')
+        throw misc::SourceError(end, "`;` expected after variable declarations");
 }
 
 static UPtr<Statement> l_parseIf(View &source, misc::Token tok) {
@@ -55,17 +74,38 @@ static UPtr<Statement> l_parseIf(View &source, misc::Token tok) {
     return IfElse::create(tok, std::move(expr), std::move(then), std::move(otherwise));
 }
 
+static UPtr<Statement> l_parseWhile(View &source, misc::Token tok) {
+    misc::Token brc;
+    misc::tokenize(source, misc::TOKF_NONE, &brc);
+    if (brc.type != '(')
+        throw misc::SourceError(brc, "Expected `(` after `while`");
+    auto expr = parseExprItem(source); // will be enclosed in `()`
+    auto body = parseStatement(source);
+    return While::create(tok, std::move(expr), std::move(body));
+}
+
 UPtr<Statement> parseStatement(View &source) {
     misc::Token tok;
     auto v = misc::tokenize(source, misc::TOKF_NONE, &tok);
     misc::verb(TAG) << "ParseStatement token " << (char) tok.type << " `" << tok.view << "`";
     if (tok.type == ';') { 
+        source = v;
         return nullptr;
     } else if (tok.type == misc::TOK_NAME && tok.view == "var") {
         source = v;
         auto ds = VarDeclStatement::create(tok);
-        l_parseVarDecl(source, ds.get());
+        parseVarDecls(source, ds.get());
         return ds;
+    } else if (tok.type == misc::TOK_NAME && tok.view == "return") {
+        source = v;
+        auto expr = parseExpr(source, misc::TOK_SEMICOL);
+        auto semicol = misc::tokenize(source, misc::TOKF_NONE);
+        if (semicol.type != misc::TOK_SEMICOL)
+            throw misc::SourceError(semicol, "Semicolon expected");
+        return ReturnStatement::create(tok, std::move(expr));
+    } else if (tok.type == misc::TOK_NAME && tok.view == "while") {
+        source = v;
+        return l_parseWhile(source, tok);
     } else if (tok.type == misc::TOK_NAME && tok.view == "if") {
         source = v;
         return l_parseIf(source, tok);

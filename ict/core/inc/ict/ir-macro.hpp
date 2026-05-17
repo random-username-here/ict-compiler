@@ -29,6 +29,12 @@
     X(0x13, false,  false,  MUL,            "Mul")\
     X(0x14, false,  false,  MOD,            "Mod")\
     \
+    X(0x15, false,  false,  LSH,            "Lsh")\
+    X(0x16, false,  false,  RSH,            "Rsh")\
+    X(0x17, false,  false,  OR,             "Or")\
+    X(0x18, false,  false,  AND,            "And")\
+    X(0x19, false,  false,  XOR,            "Xor")\
+    \
     X(0x20, false,  false,  LT,             "Lt")\
     X(0x21, false,  false,  GT,             "Gt")\
     X(0x22, false,  false,  GE,             "Ge")\

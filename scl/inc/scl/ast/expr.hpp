@@ -5,6 +5,7 @@
 #include "misclib/tree.hpp"
 #include "scl/ast/basic.hpp"
 #include "scl/ast/type.hpp"
+#include <cstddef>
 
 namespace scl {
 
@@ -30,6 +31,13 @@ enum BinaryKind {
     BIN_NEQ,
     BIN_COMMA,
     BIN_ASSIGN,
+
+    BIN_RSH,
+    BIN_LSH,
+    BIN_BOR,
+    BIN_BAND,
+    BIN_BXOR,
+
     BIN_SPACE, // empty space operator (`a b`), used as call/multiplication/..., depending on type
 };
 
@@ -48,6 +56,7 @@ class Expr : public misc::Item<Expr>, public misc::WithToken {
     misc::Slot<Expr, Type> m_type;
 public:
     Expr(misc::Token tok) :WithToken(tok), m_type(this) {}
+    Expr(std::nullptr_t) :WithToken(nullptr), m_type(this) {}
     auto &type() { return m_type; }
     auto &type() const { return m_type; }
     virtual void dump(std::ostream &os) const = 0;
@@ -60,6 +69,8 @@ class Binary : public Expr {
 public:
     Binary(misc::Token tok, BinaryKind kind, UPtr<Expr> &&l, UPtr<Expr> &&r)
         :Expr(tok), m_left(this, std::move(l)), m_right(this, std::move(r)), m_kind(kind) {}
+    Binary(BinaryKind kind, UPtr<Expr> &&l, UPtr<Expr> &&r)
+        :Expr(nullptr), m_left(this, std::move(l)), m_right(this, std::move(r)), m_kind(kind) {}
     MISC_CREATEFUNC(Binary);
 
     void setKind(BinaryKind k) { m_kind = k; } // used to convert space to multiplication
@@ -90,11 +101,25 @@ public:
 class Number : public Expr {
     ict::Integer m_val;
 public:
+    Number(ict::Integer v) :Expr(nullptr), m_val(v) {}
     Number(misc::Token tok) :Expr(tok), m_val(tok.decodeNum()) {}
     MISC_CREATEFUNC(Number);
+
     auto val() const { return m_val; }
     void dump(std::ostream &os) const override;
 };
+
+class String : public Expr {
+    std::string m_val;
+public:
+    String(misc::View v) :Expr(nullptr), m_val(v) {}
+    String(misc::Token tok) :Expr(tok), m_val(tok.decodeStr()) {}
+    MISC_CREATEFUNC(String);
+
+    auto val() const { return m_val; }
+    void dump(std::ostream &os) const override;
+};
+
 
 class Name : public Expr {
     Decl *m_item = nullptr;
@@ -122,6 +147,5 @@ public:
 
     void dump(std::ostream &os) const override;
 };
-
 
 };

@@ -3,6 +3,8 @@
 /// This example shows all posible tag placements.
 ///
 
+decl @global !decl_tag;
+bss_impl @global 8 !bss_tag;
 func_decl @main(%x i64 !arg, %y i8 !another_arg) i64 !function_declaration;
 
 func_impl @main !function_implementation {
