@@ -9,25 +9,43 @@ ict::View binKind2str(BinaryKind k) {
     #define GEN(k) case BIN_##k: return #k;
     switch(k) {
         GEN(UNKNOWN);
+
         GEN(ADD);
         GEN(SUB);
         GEN(MUL);
         GEN(DIV);
         GEN(MOD);
+        GEN(RSH);
+        GEN(LSH);
+        GEN(BOR);
+        GEN(BAND);
+        GEN(BXOR);
+
         GEN(LT);
         GEN(LE);
         GEN(GT);
         GEN(GE);
         GEN(EQ);
         GEN(NEQ);
-        GEN(SPACE);
+
+        GEN(OR);
+        GEN(AND);
+
+        GEN(IADD);
+        GEN(ISUB);
+        GEN(IMUL);
+        GEN(IDIV);
+        GEN(IMOD);
+        GEN(IRSH);
+        GEN(ILSH);
+        GEN(IBXOR);
+        GEN(IBAND);
+        GEN(IBOR);
+
         GEN(COMMA);
-        GEN(RSH);
-        GEN(LSH);
-        GEN(BOR);
-        GEN(BAND);
-        GEN(BXOR);
         GEN(ASSIGN);
+        GEN(SPACE);
+
         default: return "(unknown)";
     }
 #undef GEN
@@ -38,6 +56,12 @@ ict::View unKind2str(UnaryKind k) {
     switch(k) {
         GEN(UNKNOWN);
         GEN(NEG);
+        GEN(NOT);
+        GEN(INV);
+        GEN(INC_PRE);
+        GEN(INC_POST);
+        GEN(DEC_PRE);
+        GEN(DEC_POST);
         GEN(REF);
         GEN(DEREF);
         default: return "(unknown)";

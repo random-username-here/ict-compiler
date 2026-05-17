@@ -61,10 +61,11 @@ UPtr<Expr> parseExprItem(View &source) {
 }
 
 enum OpType {
-    OT_UNR = 1, // unary, rtl
-    OT_BIN = 2, // bin, rtl
-    OT_RAS = 4, // binary, rtl => 
-    OT_LAS = 8
+    OT_UNR = 1, // prefix unary
+    OT_BIN = 2, // normal binary
+    OT_RAS = 4, // right-associative
+    OT_LAS = 8, // left-associative
+    OT_SUF = 16 // suffix unary
 };
 
 struct OpDef { int flags; View text; int type; int prior; };
@@ -73,6 +74,15 @@ static const OpDef l_spaceOp = { OT_BIN | OT_RAS, "(space)", BIN_SPACE, 0 };
 
 static const OpDef l_ops[] = {
     // reflect c++'ses style
+    // based on https://en.cppreference.com/cpp/language/operator_precedence
+
+    { OT_SUF | OT_LAS, "++", UN_INC_POST, 1 },
+    { OT_SUF | OT_LAS, "--", UN_DEC_POST, 1 },
+
+    { OT_UNR | OT_RAS, "++", UN_INC_PRE, 2 },
+    { OT_UNR | OT_RAS, "--", UN_DEC_PRE, 2 },
+    { OT_UNR | OT_RAS, "!", UN_NOT, 2 },
+    { OT_UNR | OT_RAS, "~", UN_INV, 2 },
     { OT_UNR | OT_RAS, "-", UN_NEG, 2 },
     { OT_UNR | OT_RAS, "*", UN_DEREF, 2 },
 
@@ -100,13 +110,28 @@ static const OpDef l_ops[] = {
     { OT_BIN | OT_LAS, "^", BIN_BXOR, 12 },
     { OT_BIN | OT_LAS, "|", BIN_BOR, 13 },
     
+    { OT_BIN | OT_LAS, "&&", BIN_AND, 14 },
+
+    { OT_BIN | OT_LAS, "||", BIN_OR, 15 },
+    
     { OT_BIN | OT_RAS, "=", BIN_ASSIGN, 16 },
+    { OT_BIN | OT_RAS, "+=", BIN_IADD, 16 },
+    { OT_BIN | OT_RAS, "-=", BIN_ISUB, 16 },
+    { OT_BIN | OT_RAS, "*=", BIN_IMUL, 16 },
+    { OT_BIN | OT_RAS, "/=", BIN_IDIV, 16 },
+    { OT_BIN | OT_RAS, "%=", BIN_IMOD, 16 },
+    { OT_BIN | OT_RAS, ">>=", BIN_IRSH, 16 },
+    { OT_BIN | OT_RAS, "<<=", BIN_ILSH, 16 },
+    { OT_BIN | OT_RAS, "^=", BIN_IBXOR, 16 },
+    { OT_BIN | OT_RAS, "&=", BIN_IBAND, 16 },
+    { OT_BIN | OT_RAS, "|=", BIN_IBOR, 16 },
 
     { OT_BIN | OT_RAS, ",", BIN_COMMA, 17 }, // right-associative, unlike C++
 };
 
 static const OpDef *l_findOp(View s, bool unary) {
     for (size_t i = 0; i < sizeof(l_ops)/sizeof(OpDef); ++i) {
+        // suffix unary's are counted as not unary here
         if (bool(l_ops[i].flags & OT_UNR) != unary) continue;
         if (l_ops[i].text != s) continue;
         return &l_ops[i];
@@ -117,7 +142,7 @@ static const OpDef *l_findOp(View s, bool unary) {
 void l_unstackOp(std::vector<UPtr<Expr>> &valStack, std::vector<const OpDef*> &opStack, std::vector<misc::Token> &opTokStack) {
     auto top = opStack.back();
     //misc::verb(TAG) << "Unstack " << top->text << "\n";
-    if (top->flags & OT_UNR) {
+    if ((top->flags & OT_UNR) || (top->flags & OT_SUF)) {
         auto v = std::move(valStack.back());
         valStack.pop_back();
         valStack.push_back(Unary::create(opTokStack.back(), (UnaryKind) top->type, std::move(v)));
@@ -136,6 +161,18 @@ static bool l_initListHas(std::initializer_list<misc::TokenType> il, misc::Token
     return false;
 }
 
+static bool l_shouldUnstack(const std::vector<const OpDef*> &opStack, const OpDef *def) {
+    if (opStack.empty()) return false;
+    auto top = opStack.back();
+    if ((def->flags & OT_SUF) && def->prior > top->prior)
+        return false; // first apply suffix, after that do that operator
+    if ((def->flags & OT_UNR) && (top->flags & OT_UNR))
+        return false; // both waiting for value
+    if (top->prior < def->prior) return true;
+    if (top->prior == def->prior && (def->flags & OT_LAS)) return true;
+    return false;
+}
+
 UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> terminal) {
     std::vector<UPtr<Expr>> valStack;
     std::vector<const OpDef*> opStack;
@@ -151,14 +188,16 @@ UPtr<Expr> parseExpr(View &source, std::initializer_list<misc::TokenType> termin
             auto def = l_findOp(tok.view, unaryExpected);
             if (!def)
                 throw misc::SourceError(tok, "Unknown operator");
-            while (!opStack.empty() && (
-                        opStack.back()->prior < def->prior 
-                        || (opStack.back()->prior < def->prior && (def->flags & OT_LAS)))) {
+            while (l_shouldUnstack(opStack, def))
                 l_unstackOp(valStack, opStack, opTokStack);
-            }
             opTokStack.push_back(tok);
             opStack.push_back(def);
-            unaryExpected = true;
+            if (def->flags & OT_SUF) {
+                l_unstackOp(valStack, opStack, opTokStack);
+                unaryExpected = false;
+            } else {
+                unaryExpected = true;
+            }
         } else {
             if (!unaryExpected) {
                 opStack.push_back(&l_spaceOp);

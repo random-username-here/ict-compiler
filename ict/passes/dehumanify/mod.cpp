@@ -6,7 +6,7 @@ class Dehumanifier : public ict::Pass {
     std::string_view id() const override { return "ict.dehumanify"; }
     std::string_view brief() const override { return "ICT pass to pull constants out of non-`Const` operands"; }
 
-    void run(ict::Manager *mgr) const override {
+    bool run(ict::Manager *mgr) const override {
         for (auto impl : mgr->module()->impls()) {
             if (auto func = dynamic_cast<ict::FunctionImpl*>(impl)) {
                 for (auto block : func->blocks()) {
@@ -34,6 +34,7 @@ class Dehumanifier : public ict::Pass {
                 func->invalidateAnalysis();
             }
         }
+        return true;
     }
 };
 

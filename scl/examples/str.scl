@@ -1,5 +1,0 @@
-fn puts(*i8 str);
-
-fn main() {
-    puts("Hello world!");
-}

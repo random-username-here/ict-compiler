@@ -18,26 +18,47 @@ class Number;
 
 enum BinaryKind {
     BIN_UNKNOWN = 0,
+
+    // Simple math
     BIN_ADD,
     BIN_SUB,
     BIN_MUL,
     BIN_DIV,
-    BIN_MOD,
-    BIN_LT,
-    BIN_LE,
-    BIN_GT,
-    BIN_GE,
-    BIN_EQ,
-    BIN_NEQ,
-    BIN_COMMA,
-    BIN_ASSIGN,
-
+    BIN_MOD, 
     BIN_RSH,
     BIN_LSH,
     BIN_BOR,
     BIN_BAND,
     BIN_BXOR,
 
+    // Comparsions
+    BIN_LT,
+    BIN_LE,
+    BIN_GT,
+    BIN_GE,
+    BIN_EQ,
+    BIN_NEQ,
+
+    // Boolean
+    BIN_OR,
+    BIN_AND,
+
+    // Inplace
+    BIN_IADD,
+    BIN_ISUB,
+    BIN_IMUL,
+    BIN_IDIV,
+    BIN_IMOD,
+    BIN_IRSH,
+    BIN_ILSH,
+    BIN_IBXOR,
+    BIN_IBAND,
+    BIN_IBOR,
+    // TODO: &&= ?
+
+    // Special
+    BIN_COMMA,
+    BIN_ASSIGN,
     BIN_SPACE, // empty space operator (`a b`), used as call/multiplication/..., depending on type
 };
 
@@ -45,7 +66,16 @@ ict::View binKind2str(BinaryKind k);
 
 enum UnaryKind {
     UN_UNKNOWN = 0,
-    UN_NEG,
+
+    UN_NEG, // -
+    UN_NOT, // !
+    UN_INV, // ~
+
+    UN_INC_PRE,
+    UN_DEC_PRE,
+    UN_INC_POST,
+    UN_DEC_POST,
+
     UN_REF,
     UN_DEREF,
 };

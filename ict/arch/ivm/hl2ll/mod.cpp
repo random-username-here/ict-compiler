@@ -220,11 +220,11 @@ class HL2LL : public Pass
         }
     }
 
-    void run(Manager *mgr) const override
+    bool run(Manager *mgr) const override
     {
         if (!mgr->backend() || mgr->backend()->archName() != "ivm") {
             misc::info(TAG) << "Backend is not set to `ivm`, skipping";
-            return;
+            return false;
         }
 
         misc::info(TAG) << "Work is being done";
@@ -240,8 +240,9 @@ class HL2LL : public Pass
             // 8 - return address
             // >=16 - args
             int off = 8; 
-            for (auto arg : func->decl()->args()) {
-                assert(arg->type()->size() <= 8); // dumb calling convention: all args are 8 bytes, on datastack
+            for (size_t i = func->decl()->args().size() - 1; i != (size_t) -1; --i) {
+                auto arg = func->decl()->args()[i];
+                assert(arg->type()->size() <= 8);
                 offsets[arg] = off;
                 off += 8;
             }
@@ -259,6 +260,7 @@ class HL2LL : public Pass
                 ins.create(IVM_R_SPUSH, nullptr)->addTag("noreorder")->addTag(Tag(std::string("arg.") + std::string(i->name())));
             ins.create(IVM_R_SFBEGIN, nullptr)->addTag("noreorder");
         }
+        return true;
     }
 };
 

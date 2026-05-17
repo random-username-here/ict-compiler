@@ -1,0 +1,29 @@
+///
+/// All types
+///
+
+// Primitives
+type bool_t bool;
+type i64_t  int64;
+type i32_t  int32;
+type i16_t  int16;
+type i8_t   int8;
+
+// Modifiers
+type cbool_t const bool;
+type cvoid_t *const void;
+
+// Pointers
+type void_ptr_t  *void;
+type bool_ptr_t  *bool;
+
+// Functions
+type simple_func_t func() void;
+type func_with_args_t func(int64, int64) int64;
+type func_ptr_t *func() void;
+type func_with_func_t func(*func(int64, int64) int64, int64, int64) int64;
+
+// Typedefs
+type typedef_t i64_t;
+type second_typedef_t typedef_t; // chain them
+type funcdef_t func(*func_with_func_t) bool_t;

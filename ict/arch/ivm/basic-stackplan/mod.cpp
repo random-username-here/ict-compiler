@@ -79,17 +79,18 @@ class StackPlanner : public Pass
         func->invalidateAnalysis();
     }
 
-    void run(Manager *mgr) const override
+    bool run(Manager *mgr) const override
     {
-        if (mgr->backend()->archName() != "ivm") {
+        if (!mgr->backend() || mgr->backend()->archName() != "ivm") {
             misc::info(TAG) << "Backend is not set to `ivm`, skipping";
-            return;
+            return false;
         }
 
         misc::info(TAG) << "Stack planner running...";
         for (auto it : mgr->module()->impls())
             if (auto func = dynamic_cast<FunctionImpl*>(it))
                 m_function(func);
+        return true;
     }
 };
 

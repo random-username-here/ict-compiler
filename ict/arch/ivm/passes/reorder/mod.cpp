@@ -96,7 +96,10 @@ class Reorderer : public ict::Pass {
         }
     }
 
-    void run(ict::Manager *mgr) const override {
+    bool run(ict::Manager *mgr) const override {
+        if (!mgr->backend() || mgr->backend()->archName() != "ivm") 
+            return false;
+
         Stats stats;
         misc::info(TAG) << "Reorder pass doing its thing...";
         for (auto impl : mgr->module()->impls()) {
@@ -108,8 +111,10 @@ class Reorderer : public ict::Pass {
         }
         misc::info(TAG) << "Found " << stats.fromStackCount << " FromStack, " 
                 << stats.toStackCount << " ToStack, " << stats.pairsFound << " single def-use pairs,\ncollapsed " 
-                << stats.delCount << " of them ==> " << 100 * stats.delCount / stats.pairsFound << "% decrease in pairs, "
-                << 100 * stats.delCount / stats.toStackCount << "% decrease in slots";
+                << stats.delCount << " of them ==> " << (stats.pairsFound ? 100 * stats.delCount / stats.pairsFound : 0) << "% decrease in pairs, "
+                << (stats.toStackCount ? 100 * stats.delCount / stats.toStackCount : 0) << "% decrease in slots";
+
+        return true;
     }
 };
 

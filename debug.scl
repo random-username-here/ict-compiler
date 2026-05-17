@@ -1,31 +1,34 @@
-func print_number(n int64) void;
-func print_char(n int64) void;
-func print_cstring(s *int8) void;
+include "ivm/intrin.scl";
+include "ivm/printer.scl";
+include "ivm/irq.scl";
+include "ivm/crt.scl";
 
-var CONSTANT const int64 = 123;
+var CHAR_W const int16 = 1300;
+var CHAR_ADV const int16 = 1300;
+var CHAR_H const int16 = 1900;
+var CHAR_LINE const int16 = 2000;
+var step int16;
 
-func strlen(str *int8) int64 {
-    var len = 0;
-    while (*str) {
-        str = str + 1; // TODO: increments & inplace
-        len = len + 1;
+func tim_handler() {
+    var y = 0;
+    while (y < 16) {
+        var x = 0;
+        while (x < 16) {
+            crt_char(x + y * 16, CHAR_W, CHAR_H, 1024 + CHAR_ADV * x, 1024 + CHAR_LINE * y);
+            ++x;
+        }
+        ++y;
     }
-    return len;
+    step++;
+    if (step == 40) step = 0;
+    crt_char(0x90 + step / 10, CHAR_W, CHAR_H, 1024, 1024 + CHAR_LINE * 20);
+    crt_char(0xa0 + step / 10, CHAR_W, CHAR_H, 1024 + CHAR_ADV * 2, 1024 + CHAR_LINE * 20);
+    crt_char(0x80 + step / 10, CHAR_W, CHAR_H, 1024 + CHAR_ADV * 4, 1024 + CHAR_LINE * 20);
+    crt_char(0x30 + step / 4, CHAR_W, CHAR_H, 1024 + CHAR_ADV * 6, 1024 + CHAR_LINE * 20);
+    ivm_fini();
 }
 
 func main() void {
-    var hello = "Strings are fully working now!\n";
-    print_cstring(hello);
-
-    print_cstring("That string's length was ");
-    print_number(strlen(hello));
-    print_cstring(", as computed by strlen()\n");
-
-    print_cstring("A global CONSTANT is equal to ");
-    print_number(CONSTANT);
-    print_cstring(" and has address ");
-    print_number(&CONSTANT);
-    print_cstring("\n");
+    ivm_irq(IRQ_TIM, &tim_handler);
+    while(1) ivm_hlt();
 }
-
-

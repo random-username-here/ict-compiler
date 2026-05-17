@@ -76,7 +76,8 @@ void BlobImpl::dump(std::ostream &os) const {
     save.copyfmt(os);
     for (size_t i = 0; i < blob().size(); ++i) {
         if (i % 16 == 0) os << "\n";
-        os << " 0x" << std::setw(2) << std::hex << std::setfill('0') << (int) blob()[i];
+        uint8_t v = blob()[i];
+        os << " 0x" << std::setw(2) << std::hex << std::setfill('0') << (unsigned) v;
     }
     os.copyfmt(save);
     os << RST << misc::endBlock << ";\n" << RST;
@@ -234,7 +235,9 @@ UPtr<Type> Operation::l_createRt() {
         case OP_LSH: case OP_RSH:
         case OP_AND: case OP_OR: case OP_XOR:
             if (tparam().get()) return tparam()->clone();
-            return arg_v(0)->ptr()->returnType()->clone();
+            if(arg_v(0)) return arg_v(0)->ptr()->returnType()->clone();
+            if(arg_v(1)) return arg_v(1)->ptr()->returnType()->clone();
+            return Type::i64_t();
         case OP_LT: case OP_GT: case OP_GE:
         case OP_LE: case OP_EQ: case OP_NEQ:
             return Type::i8_t();

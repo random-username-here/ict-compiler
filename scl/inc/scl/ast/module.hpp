@@ -33,9 +33,15 @@ class Function : public TopLevel, public GlobalDecl {
     misc::Slot<Function, Statement> m_body;
     misc::SlotVector<Function, FunctionArg> m_args;
     misc::Slot<Function, Type> m_returnType;
+    bool m_hasImplicitReturnType = false;
 public:
     Function(misc::Token name) :m_body(this), m_args(this), m_returnType(this), GlobalDecl(name) {}
     MISC_CREATEFUNC(Function);
+
+    // return type was not specified and assumed to be void,
+    // but can be changed by typing pass
+    bool hasImplcitReturnType() const { return m_hasImplicitReturnType; }
+    void setImplicitReturnType(bool i) { m_hasImplicitReturnType = i; }
 
     auto &body() { return m_body; } auto &body() const { return m_body; }
     auto &args() { return m_args; } auto &args() const { return m_args; }

@@ -1,0 +1,56 @@
+///
+/// Every operator in existence
+/// Written based on expr.hpp
+/// 
+
+// Math
+func add(a int64, b int64) = a + b;
+func sub(a int64, b int64) = a - b;
+func mul(a int64, b int64) = a * b;
+func div(a int64, b int64) = a / b;
+func mod(a int64, b int64) = a % b;
+func rsh(a int64, b int64) = a >> b;
+func lsh(a int64, b int64) = a << b;
+func bor(a int64, b int64) = a | b;
+func band(a int64, b int64) = a & b;
+func bxor(a int64, b int64) = a ^ b;
+
+// Comparsions
+func lt(a int64, b int64) = a < b;
+func le(a int64, b int64) = a <= b;
+func gt(a int64, b int64) = a > b;
+func ge(a int64, b int64) = a >= b;
+func eq(a int64, b int64) = a == b;
+func neq(a int64, b int64) = a != b;
+
+// Boolean
+func or(a bool, b bool) = a || b;
+func and(a bool, b bool) = a && b;
+
+// Inplace
+func iadd(a *int64, b int64) = *a += b;
+func isub(a *int64, b int64) = *a -= b;
+func imul(a *int64, b int64) = *a *= b;
+func idiv(a *int64, b int64) = *a /= b;
+func imod(a *int64, b int64) = *a %= b;
+func irsh(a *int64, b int64) = *a >>= b;
+func ilsh(a *int64, b int64) = *a <<= b;
+func ibor(a *int64, b int64) = *a |= b;
+func iband(a *int64, b int64) = *a &= b;
+func ibxor(a *int64, b int64) = *a ^= b;
+
+// Special
+func comma(a int64, b int64) = a, b;
+func mul_space(a int64, b int64) = a b;
+func assign(a *int64, b int64) = *a = b;
+
+// Unary
+
+func neg(v int64) = -v;
+func not(v bool) = !v;
+func inv(v int64) = ~v;
+
+func inc_pre(v *int64) = ++ *v; // operators must be separated by space for now
+func dec_pre(v *int64) = -- *v;
+func inc_post(v *int64) = (*v)++;
+func dec_post(v *int64) = (*v)--;

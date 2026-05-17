@@ -1,4 +1,5 @@
 #pragma once
+#include "ict/mod.hpp"
 #include "misclib/parse.hpp"
 #include "scl/ast/expr.hpp"
 #include "scl/ast/block.hpp"
@@ -30,6 +31,8 @@ UPtr<Statement> parseStatement(View &source);
 
 /// Parse one top-level thing.
 /// There can be include directives here, so sometimes we get nothing/many entries here.
-bool parseTopLevel(View &source, Module *into);
+bool parseTopLevel(View &source, Module *into, const std::filesystem::path &file);
+
+void parseFile(ict::SourceFile *file, Module *into);
 
 };

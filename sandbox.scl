@@ -13,7 +13,7 @@ func math() void {
     if (a > b) {}
     if (a > b) {
         var c int64 = (a + b) * b * b + 6 * a;
-        /var d = c != b;
+        var d = c != b;
     } else {
         var d = a;
     }

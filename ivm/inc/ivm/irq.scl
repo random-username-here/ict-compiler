@@ -1,0 +1,26 @@
+///
+/// Attaching handlers to interrupts, scl interface
+/// To exit interrupt handler do not use return! Use a function defined here.
+/// It calls fini
+///
+
+type ivm_irq_t int8;
+var IRQ_TIM const ivm_irq_t = 0x00; // Timer, runs each ~10ms
+var IRQ_KBD const ivm_irq_t = 0x07; // Key was pressed
+var IRQ_MDM const ivm_irq_t = 0x08; // Modem recived data
+var IRQ_ERR const ivm_irq_t = 0x0E; // Exception happaned
+
+/// End interrupt state.
+func ivm_fini();
+
+/// Disable interrupts
+func ivm_cli();
+
+/// Enable interrupts
+func ivm_sti();
+
+/// Set interrupt handler
+func ivm_irq(irq ivm_irq_t, handler *func() void) {
+    var itab **func() void = 0x8;
+    *(itab + irq) = handler;
+}

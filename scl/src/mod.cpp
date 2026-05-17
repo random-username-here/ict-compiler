@@ -24,13 +24,12 @@ public:
         return misc::endsWith(name, ".scl");
     }
 
-    bool compile(Manager *mgr, Module *into) const override {
-        misc::info(TAG) << "Parsing " << misc::ACCENT << mgr->filename() << misc::RST << '\n';
-        View source = mgr->source();
+    bool compile(Manager *mgr, SourceFile *file) const override {
+        misc::info(TAG) << "Parsing " << misc::ACCENT << file->path << misc::RST << '\n';
         try {
             auto mod = scl::Module::create();
             misc::info(TAG) << "Parsing module...";
-            while (scl::parseTopLevel(source, mod.get()));
+            parseFile(file, mod.get());
             misc::info(TAG) << "Parsed module:\n" << misc::beginBlock << *mod << misc::endBlock;
             misc::info(TAG) << "Resolving scopes...";
             scl::Scope top; // top scope, in which multiple modules can be added
@@ -40,22 +39,13 @@ public:
             scl::resolveTypes(mod.get());
             misc::info(TAG) << "With types resolved:\n" << misc::beginBlock << *mod << misc::endBlock;
             misc::info(TAG) << "Generating IR...";
-            irModule(into, mod.get());
-            misc::info(TAG) << "Generated IR:\n" << misc::beginBlock << *into << misc::endBlock;
+            irModule(mgr->module(), mod.get());
         } catch (misc::SourceError &e) {
             auto msg = misc::error(TAG);
-            e.writeFormatted(msg.stream(), mgr->filename(), mgr->source());
+            mgr->printError(e, msg.stream());
             return false;
         }
-        misc::info(TAG) << "Verifying generated IR...";
-
-        if (into->verify()) {
-            misc::info(TAG) << "IR is good\n";
-            return true;
-        } else {
-            misc::error(TAG) << "IR has problems, bailing out\n";
-            return false;
-        }
+        return true;
     }
 };
 

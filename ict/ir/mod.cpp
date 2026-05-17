@@ -292,9 +292,10 @@ public:
             throw misc::SourceError(punct, "Expected `;` after bss impl");
     }
 
-    bool compile(ict::Manager *mgr, ict::Module *mod) const override {
-        misc::info(TAG) << "Parsing " << misc::ACCENT << mgr->filename() << misc::RST << '\n';
-        View source = mgr->source();
+    bool compile(ict::Manager *mgr, ict::SourceFile *file) const override {
+        misc::info(TAG) << "Parsing " << misc::ACCENT << file->path << misc::RST << '\n';
+        View source = file->contents;
+        auto mod = mgr->module();
         GlobalNameTable gnt;
         try {
             while (1) {
@@ -316,19 +317,10 @@ public:
             }
         } catch (misc::SourceError &e) {
             auto msg = misc::error(TAG);
-            e.writeFormatted(msg.stream(), mgr->filename(), mgr->source());
+            mgr->printError(e, msg.stream());
             return false;
         }
-
-        misc::info(TAG) << "Verifying " << misc::ACCENT << mgr->filename() << misc::RST << '\n';
-
-        if (mod->verify()) {
-            misc::info(TAG) << misc::ACCENT << mgr->filename() << misc::RST << " is good\n";
-            return true;
-        } else {
-            misc::error(TAG) << misc::ACCENT << mgr->filename() << misc::RST << " has problems, bailing out\n";
-            return false;
-        }
+        return true;
     }
 };
 

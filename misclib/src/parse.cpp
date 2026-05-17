@@ -250,7 +250,7 @@ static int hexdec(char ch) {
 std::string Token::decodeStr() const {
     assert(type == TOK_CHAR || type == TOK_STR);
     std::string res;
-    for (size_t i = 1; i < view.size()-1; ++i) {
+    for (size_t i = 1; i < view.size()-1;) {
         if (view[i] == '\\') {
             if (i == view.size() - 1) break;
             char ch = view[i+1];
@@ -271,6 +271,7 @@ std::string Token::decodeStr() const {
             i += 2;
         } else {
             res += view[i];
+            i += 1;
         }
     }
     return res;

@@ -1,10 +1,19 @@
 #pragma once
 #include "ict/ir.hpp"
 #include "misclib/defs.hpp"
+#include "misclib/parse.hpp"
 #include "modlib_manager.hpp"
 #include "modlib_mod.hpp"
+#include <filesystem>
+#include <list>
+#include <optional>
 #include <unordered_map>
 namespace ict {
+
+struct SourceFile {
+    std::filesystem::path path, abspath;
+    std::string contents;
+};
 
 class Manager;
 
@@ -30,8 +39,9 @@ public:
     
     /**
      * \brief Run the pass.
+     * Returns if pass actually ran, and did not skip because this is bad arch.
      */
-    virtual void run(Manager *mgr) const = 0;
+    virtual bool run(Manager *mgr) const = 0;
     virtual ~Pass() {}
 };
 
@@ -56,31 +66,40 @@ class Frontend :
 public:
     virtual View langName() const = 0;
     virtual bool takesFile(View name) const = 0;
-    virtual bool compile(Manager *mgr, Module *into) const = 0;
+    virtual bool compile(Manager *mgr, SourceFile *source) const = 0;
     virtual ~Frontend() {}
 };
+
 
 class Manager {
     ModManager &m_mm;
     Backend *m_backend = nullptr;
-    Frontend *m_frontend = nullptr;
-    std::string m_source;
-    std::string m_filename;
     UPtr<Module> m_module;
     std::vector<Pass*> m_passes;
     std::unordered_map<size_t, Analyzer*> m_analyzers;
+    std::vector<std::filesystem::path> m_includePaths;
+    std::list<SourceFile> m_files;
+
 public:
 
     static Manager *main();
 
     Manager(ModManager &mm);
     
-    void setSource(View source, View filename);
-    void loadSourceFromFile(View filename);
+    SourceFile *loadFile(const std::filesystem::path &path);
+    bool hasFile(const std::filesystem::path &file) const;
+
+    SourceFile *findFileByView(View view);
+    void printError(const misc::SourceError &err, std::ostream &os);
+
+    void addIncludePath(const std::filesystem::path &p) { m_includePaths.push_back(p); }
+    std::optional<std::filesystem::path> resolveInclude(View path);
+    std::optional<std::filesystem::path> resolveInclude(View path, const std::filesystem::path &self);
 
     bool setTargetArch(View name);
-    bool setFrontend(View name);
-    bool choseFrontendByFileExt();
+
+    Frontend *findFrontend(View name);
+    Frontend *choseFrontendByFileExt(const std::filesystem::path &filename);
 
     UPtr<Analysis> runAnalyzer(size_t id, const FunctionImpl *on) {
         if (m_analyzers.count(id) == 0)
@@ -88,17 +107,12 @@ public:
         return m_analyzers.at(id)->run(on);
     }
 
-    bool parse();
     void runAllPasses();
     void emit(std::ostream &out);
 
-    View source() { return m_source; }
-    View filename() { return m_filename; }
     Module *module() { return m_module.get(); }
     Backend *backend() { return m_backend; }
-    Frontend *frontend() { return m_frontend; }
     const Backend *backend() const { return m_backend; }
-    const Frontend *frontend() const { return m_frontend; }
 };
 
 }

@@ -1,6 +1,7 @@
-///=========================================================
+///
 /// printer.s -- Reuseable printing library for IVM
-///=========================================================
+///
+/// Requires stack to be set up to run
 
 ///
 /// Print a single character

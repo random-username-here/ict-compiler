@@ -94,7 +94,8 @@ class IvmBackend : public ict::Backend {
         save.copyfmt(out);
         for (size_t i = 0; i < blob->blob().size(); ++i) {
             if (i % 16 == 0) out << "\n.ascii \"";
-            out << "\\x" << std::setw(2) << std::hex << std::setfill('0') << (int) blob->blob()[i];
+            uint8_t v = blob->blob()[i];
+            out << "\\x" << std::setw(2) << std::hex << std::setfill('0') << (unsigned) v;
             if (i % 16 == 15 || i == blob->blob().size() - 1) out << "\"";
         }
         out.copyfmt(save);

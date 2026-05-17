@@ -1,5 +1,7 @@
 #include "scl/ast/module.hpp"
+#include "ict/mod.hpp"
 #include "misclib/parse.hpp"
+#include "scl/ast/block.hpp"
 #include "scl/ast/type.hpp"
 #include "scl/parsing.hpp"
 
@@ -28,29 +30,57 @@ static void l_parseFunc(View &source, Module *into) {
 
     misc::Token tok;
     auto v = misc::tokenize(source, misc::TOKF_NONE, &tok);
-    if (tok.type != '{' && tok.type != ';') {
+    if (tok.type != '{' && tok.type != ';' && tok.view != "=") {
         func->returnType() = parseType(source);
         v = misc::tokenize(source, misc::TOKF_NONE, &tok);
     } else {
         func->returnType() = PrimitiveType::create(PrimitiveType::VOID);
+        func->setImplicitReturnType(true);
     }
 
     func->genDeclType();
 
-    if (tok.type == ';')
+    if (tok.type == ';') {
         source = v;
-    else
+    } else if (tok.type == '{') {
         func->body() = parseStatement(source);
+    } else {
+        source = v;
+        auto expr = parseExpr(source, misc::TOK_SEMICOL);
+        auto semicol = misc::tokenize(source, misc::TOKF_NONE);
+        if (semicol.type != ';')
+            throw misc::SourceError(semicol, "Expected semicolon after function expression");
+        func->body() = ReturnStatement::create(tok, std::move(expr));
+    }
     into->entries().push(std::move(func));
 }
 
-bool parseTopLevel(View &source, Module *into) {
+bool parseTopLevel(View &source, Module *into, const std::filesystem::path &file) {
+
     auto tok = misc::tokenize(source, misc::TOKF_NONE);
     if (tok.type == misc::TOK_EOF)
         return false;
     if (tok.type != misc::TOK_NAME)
         throw misc::SourceError(tok, "Expected a top-level keyword");
-    if (tok.view == "func") {
+    if (tok.view == "include") {
+        auto name = misc::tokenize(source, misc::TOKF_NONE);
+        if (name.type != misc::TOK_STR)
+            throw misc::SourceError(name, "Expected include path as string");
+        auto end = misc::tokenize(source, misc::TOKF_NONE);
+        if (end.type != ';')
+            throw misc::SourceError(end, "`;` expected after include");
+        
+        auto path = ict::Manager::main()->resolveInclude(name.decodeStr(), file.parent_path());
+        if (!path)
+            throw misc::SourceError(name, "That file was not found");
+
+        if (ict::Manager::main()->hasFile(*path))
+            return true; // skip, it was already added
+
+        auto file = ict::Manager::main()->loadFile(*path);
+        parseFile(file, into);
+        
+    } else if (tok.view == "func") {
         l_parseFunc(source, into);
     } else if (tok.view == "type") {
         auto name = misc::tokenize(source, misc::TOKF_NONE);
@@ -76,5 +106,11 @@ bool parseTopLevel(View &source, Module *into) {
     }
     return true;
 }
+
+void parseFile(ict::SourceFile *file, Module *into) {
+    View s = file->contents;
+    while (scl::parseTopLevel(s, into, file->path));
+}
+
 
 };

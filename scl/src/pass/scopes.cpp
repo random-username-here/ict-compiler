@@ -56,7 +56,7 @@ void resolveScopes(Expr *expr, Scope *parent) {
         // also nothing
     } else if (auto pack = dynamic_cast<ArgPack*>(expr)) {
         for (auto i : pack->items())
-            resolveTypes(i);
+            resolveScopes(i, parent);
     } else {
         throw std::runtime_error("Unknown expr type");
     }

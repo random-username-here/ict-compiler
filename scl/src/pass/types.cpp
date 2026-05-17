@@ -28,71 +28,100 @@ bad_cvt:
 }
 
 static UPtr<Type> l_binaryResult(Binary *bin) {
-    if (bin->kind() != BIN_SPACE && (!bin->left()->type()->isComplete() || !bin->right()->type()->isComplete()))
+
+    auto leftType = bin->left()->type().get(),
+         rightType = bin->right()->type().get();
+
+    if (bin->kind() != BIN_SPACE && (!leftType->isComplete() || !rightType->isComplete()))
         goto bad_op;
+
     switch (bin->kind()) {
+
         case BIN_UNKNOWN: assert(false);
+
         case BIN_ADD: case BIN_SUB:
-            if (bin->left()->type()->isPointer()) {
-                if (!bin->right()->type()->isInteger())
+            if (rightType->isPointer()) {
+                if (!leftType->isInteger())
                     goto bad_op;
-                return bin->left()->type()->copy();
+                return rightType->copy();
             }
-            if (bin->right()->type()->isPointer()) {
-                if (!bin->left()->type()->isInteger())
+            // fallthrough
+
+        case BIN_IADD: case BIN_ISUB:
+            // unlike not in-place, we cannot do int += pointer
+            if (leftType->isPointer()) {
+                if (!rightType->isInteger())
                     goto bad_op;
-                return bin->right()->type()->copy();
+                return leftType->copy();
             }
             // else fallthrough
-        case BIN_MUL:
-        case BIN_DIV: case BIN_MOD:
+
+        case BIN_MUL: case BIN_DIV: case BIN_MOD:
+        case BIN_IMUL: case BIN_IDIV: case BIN_IMOD:
         case BIN_LSH: case BIN_RSH:
+        case BIN_ILSH: case BIN_IRSH:
         case BIN_BOR: case BIN_BAND: case BIN_BXOR:
+        case BIN_IBOR: case BIN_IBAND: case BIN_IBXOR:
         space_converted_to_mul:
-            if (!bin->left()->type()->isInteger() || !bin->right()->type()->isInteger())
+            // only integers allowed
+            if (!leftType->isInteger() || !rightType->isInteger())
                 goto bad_op;
-            // TODO: chose smaller of those two
-            return PrimitiveType::create(PrimitiveType::INT64);
+            return leftType->byteSize() < rightType->byteSize() 
+                ? rightType->copy() : leftType->copy();
+
         case BIN_LT: case BIN_LE: case BIN_GT:
         case BIN_GE: case BIN_EQ: case BIN_NEQ:
-            if (!bin->left()->type()->isInteger() || !bin->right()->type()->isInteger())
+            // comparsions, ints or pointers
+            if (!(leftType->isPointer() || leftType->isInteger()))
+                goto bad_op;
+            if (!(rightType->isPointer() || rightType->isInteger()))
                 goto bad_op;
             return PrimitiveType::create(PrimitiveType::BOOL);
+
+        case BIN_OR: case BIN_AND: {
+            // must be booleans (or cast to booleans)
+            auto boolType = PrimitiveType::create(PrimitiveType::BOOL);
+            l_checkAndAddCast(bin->left().get(), boolType.get(), bin->left()->token());
+            l_checkAndAddCast(bin->right().get(), boolType.get(), bin->right()->token());
+            return boolType;
+        }
+
         case BIN_COMMA:
-            return bin->right()->type()->copy();
+            return rightType->copy();
+
         case BIN_ASSIGN:
-            // we can assign to names or something unreffed
-            if (auto unary = dynamic_cast<Unary*>(bin->left().get())) {
-                if (unary->kind() == UN_DEREF) 
-                    return bin->left()->type()->copy();
-            } else if (auto name = dynamic_cast<Name*>(bin->left().get())) {
-                // TODO: check if that is non-constant thing
-                l_checkAndAddCast(bin->right().get(), name->decl()->type().get(), bin->token());
-                return name->decl()->type()->copy();
-            }
-            throw misc::SourceError(bin->token(), "Can only assign to variables or deref-expressions");
+            // TODO: check lvalue here instead of in irgen
+            return leftType->copy();
+       
         case BIN_SPACE:
-            if (bin->left()->type()->isInteger()) {
+            if (leftType->isInteger()) {
+                // something like `3 a`
                 bin->setKind(BIN_MUL);
                 goto space_converted_to_mul;
             }
-            if (bin->left()->type()->isFunction()) { // convert foo(...) to (&foo)(...)
+
+            if (leftType->isFunction()) { // convert foo(...) to (&foo)(...)
                 bin->left() = Unary::create(bin->token(), UN_REF, bin->left()->replace(nullptr));
                 resolveTypes(bin->left().get());
+                leftType = bin->left()->type().get();
             }
-            if (!bin->right()->type()->isPack()) { // convert sin 3 to sin(3)
-                bin->right() = ArgPack::create(bin->token(), bin->right()->replace(nullptr));
+
+            if (!rightType->isPack()) { // convert sin 3 to sin(3)
+                bin->right() = ArgPack::create(bin->token(), bin->right()->replace(nullptr));    
                 resolveTypes(bin->right().get());
+                rightType = bin->right()->type().get();
             }
-            if (!bin->left()->type()->isFunctionPtr()) 
+
+            if (!leftType->isFunctionPtr()) 
                 throw misc::SourceError(bin->token(), "Cannot call not a function pointer");
-            auto ft = static_cast<FunctionType*>(static_cast<PointerType*>(bin->left()->type().get())->to().get());
+
+            auto funcType = leftType->as<PointerType>()->to()->as<FunctionType>();
             auto pack = static_cast<ArgPack*>(bin->right().get());
-            if (pack->items().size() != ft->args().size())
+            if (pack->items().size() != funcType->args().size())
                 throw misc::SourceError(bin->token(), "Invalid argument count");
             for (size_t i = 0; i < pack->items().size(); ++i)
-                l_checkAndAddCast(pack->items()[i], ft->args()[i], pack->items()[i]->token());
-            return ft->returnType()->copy();
+                l_checkAndAddCast(pack->items()[i], funcType->args()[i], pack->items()[i]->token());
+            return funcType->returnType()->copy();
     }
 
 bad_op:
@@ -107,26 +136,39 @@ bad_op:
 }
 
 static UPtr<Type> l_unaryResult(Unary *un) {
-    if (!un->val()->type()->isComplete() && un->kind() != UN_REF)
+    auto valType = un->val()->type().get();
+    if (!valType->isComplete() && un->kind() != UN_REF)
         goto bad_op;
+
     switch (un->kind()) {
-        case UN_UNKNOWN: assert(false);
-        case UN_NEG:
-            if (!un->val()->type()->isInteger())
+        case UN_UNKNOWN: 
+            assert(false);
+
+        case UN_NOT: {
+            auto boolType = PrimitiveType::create(PrimitiveType::BOOL);
+            l_checkAndAddCast(un->val().get(), boolType.get(), un->val()->token());
+            return boolType;
+        }
+
+        case UN_NEG: case UN_INV:
+        case UN_INC_PRE: case UN_INC_POST:
+        case UN_DEC_PRE: case UN_DEC_POST:
+            // TODO: check lvalue here instead of in irgen
+            if (!valType->isInteger() && !valType->isPointer())
                 goto bad_op;
-            return un->val()->type()->copy();
+            return valType->copy();
+
         case UN_REF:
-            if (auto name = dynamic_cast<Name*>(un->val().get())) {
-                return PointerType::create(name->type()->copy());
-            } else {
-                throw misc::SourceError(un->token(), "Cannot take reference of something which is not a name");
-            }
+            // TODO: same
+            return PointerType::create(valType->copy());
+
         case UN_DEREF:
             if (auto ptr = dynamic_cast<PointerType*>(un->val()->type().get()))
                 return ptr->to()->copy();
             else
                 goto bad_op;
     }
+
 bad_op:
     std::ostringstream s;
     s << "Cannot perform `" << un->token().view << " " << *un->val()->type() << "`";
@@ -152,6 +194,8 @@ void resolveTypes(Expr *expr) {
         chartype->setConst(true);
         str->type() = PointerType::create(std::move(chartype));
     } else if (auto pack = dynamic_cast<ArgPack*>(expr)) {
+        for (auto i : pack->items())
+            resolveTypes(i);
         pack->type() = PackType::create(); // TODO: tuples
     } else {
         throw std::runtime_error("Unknown expr type");
@@ -190,6 +234,12 @@ void resolveTypes(Statement *stmnt, Function *func) {
         if (ifelse->otherwise())
             resolveTypes(ifelse->otherwise().get(), func);
     } else if (auto ret = dynamic_cast<ReturnStatement*>(stmnt)) {
+        if (func->body().get() == stmnt && func->hasImplcitReturnType()) {
+            // deduce return type
+            resolveTypes(ret->expr().get());
+            return;
+        }
+
         if (ret->expr() && func->returnType()->isVoid())
             throw misc::SourceError(ret->token(), "Cannot return value from void function");
         if (!ret->expr() && !func->returnType()->isVoid())
@@ -215,6 +265,14 @@ void resolveTypes(Module *mod) {
                 resolveTypes(i->type().get());
             if (func->body())
                 resolveTypes(func->body().get(), func);
+
+            // this is generated by expression-function like `func add(...) = a + b`
+            auto bodyAsReturn = dynamic_cast<ReturnStatement*>(func->body().get());
+            if (func->hasImplcitReturnType() && bodyAsReturn && bodyAsReturn->expr()) {
+                func->returnType() = bodyAsReturn->expr()->type()->copy();
+                func->genDeclType();
+            }
+
         } else if (auto td = dynamic_cast<TypeDef*>(i)) {
             resolveTypes(td->aliasedType().get());
         } else if (auto gvb = dynamic_cast<GlobalVarBlock*>(i)) {

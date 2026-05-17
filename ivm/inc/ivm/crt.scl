@@ -1,0 +1,10 @@
+///
+/// Crt drawing, using font renderer
+///
+
+type crt_cmd_t int8;
+var CRT_MOVETO const crt_cmd_t = 0x00;
+var CRT_LINETO const crt_cmd_t = 0x01;
+
+func crt_cmd(cmd crt_cmd_t, x int16, y int16);
+func crt_char(ch int8, wscale int16, hscale int16, x int16, y int16);

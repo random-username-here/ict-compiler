@@ -1,0 +1,7 @@
+///
+/// Bindings for printer.s
+///
+
+func print_number(n int64) void;
+func print_char(n int64) void;
+func print_cstring(s *int8) void;

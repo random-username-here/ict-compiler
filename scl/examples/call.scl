@@ -1,9 +1,0 @@
-func puti(v);
-
-func add(a, b) {
-    return a + b;
-}
-
-fn main() {
-    puti(add(123, 231));
-}

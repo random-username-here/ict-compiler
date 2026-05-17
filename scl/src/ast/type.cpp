@@ -170,11 +170,11 @@ void NamedType::dump(std::ostream &os) const {
     dumpQualifiers(os);
     os << RED << "type " << CYAN << name() << RST;
     if (isResolved())
-        os << BLUE << "(" << RST << *resolved() << BLUE << ")" << RST;
+        os << DGRAY << " = " << RST << *resolved();
     else if (decl() != nullptr)
-        os << BLUE << "(decl found)" << RST;
+        os << DGRAY << " = (decl found)" << RST;
     else
-        os << BLUE << "(unresolved)" << RST;
+        os << DGRAY << " = (unresolved)" << RST;
 }
 
 bool NamedType::isSameAs(const Type *o) const {

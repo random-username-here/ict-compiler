@@ -1,0 +1,18 @@
+///
+/// Bindings for ivm.s
+///
+
+/// Halt machine untill interrupt
+func ivm_hlt();
+
+/// Get stack frame address
+func ivm_sf() *void;
+
+/// Get stack pointer address
+func ivm_sp() *void;
+
+/// End of global variables
+func ivm_bss_end() *void;
+
+/// Allocate some memory on stack
+func alloca(count int64) *void;
