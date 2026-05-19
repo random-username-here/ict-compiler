@@ -32,9 +32,10 @@ public:
     bool isFunctionPtr() const;
     bool isPack() const;
     bool isBool() const;
-    bool isType() const;
+    bool isBadType() const;
     bool isNamed() const;
     const Type *unwrapNamed() const;
+    Type *unwrapNamed();
 
     static bool areSame(const Type *a, const Type *b);
 
@@ -146,13 +147,13 @@ public:
 };
 
 /// For type declarations
-class TypeType : public Type {
+class BadType : public Type {
 public:
-    TypeType() {}
-    MISC_CREATEFUNC(TypeType);
+    BadType() {}
+    MISC_CREATEFUNC(BadType);
 
     virtual UPtr<ict::Type> toICT() const { return nullptr; };
-    virtual UPtr<Type> copy() const { return TypeType::create(); }
+    virtual UPtr<Type> copy() const { return BadType::create(); }
 
     virtual void dump(std::ostream &o) const;
     virtual bool isSameAs(const Type *other) const;
@@ -166,6 +167,7 @@ class NamedType : public Type {
     misc::Token m_name;
     TypeDecl *m_decl;
     misc::Slot<NamedType, Type> m_resolved;
+    void _checkResolved() const;
 public:
     NamedType(misc::Token name) :m_name(name), m_resolved(this) {}
     MISC_CREATEFUNC(NamedType);
@@ -184,18 +186,12 @@ public:
     virtual void dump(std::ostream &o) const;
     virtual bool isSameAs(const Type *other) const;
 
-    virtual UPtr<ict::Type> toICT() const { assert(isResolved()); return resolved()->toICT(); };
-    virtual UPtr<Type> copy() const {
-        auto t = NamedType::create(token());
-        t->setDecl(decl());
-        if (isResolved())
-            t->resolved() = resolved()->copy();
-        return t;
-    }
+    virtual UPtr<ict::Type> toICT() const { _checkResolved(); return resolved()->toICT(); };
+    virtual UPtr<Type> copy() const;
 
-    virtual size_t byteSize() const { assert(isResolved()); return resolved()->byteSize(); }
-    virtual size_t alignment() const { assert(isResolved()); return resolved()->alignment(); }
-    virtual bool isComplete() const { assert(isResolved()); return resolved()->isComplete(); }
+    virtual size_t byteSize() const { _checkResolved(); return resolved()->byteSize(); }
+    virtual size_t alignment() const { _checkResolved(); return resolved()->alignment(); }
+    virtual bool isComplete() const { _checkResolved(); return resolved()->isComplete(); }
 
 };
 

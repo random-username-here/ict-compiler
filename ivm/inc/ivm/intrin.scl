@@ -16,3 +16,5 @@ func ivm_bss_end() *void;
 
 /// Allocate some memory on stack
 func alloca(count int64) *void;
+
+func quit();

@@ -41,6 +41,10 @@ UPtr<Expr> parseExprItem(View &source) {
     } else if (tok.type == misc::TOK_NUM) {
         return scl::Number::create(tok);
     } else if (tok.type == misc::TOK_NAME) {
+        if (tok.view == "true")
+            return scl::Number::create(tok, true);
+        else if (tok.view == "false")
+            return scl::Number::create(tok, false);
         return scl::Name::create(tok);
     } else if (tok.type == '(') {
         auto t = misc::tokenize(source, misc::TOKF_NONE, &tok);

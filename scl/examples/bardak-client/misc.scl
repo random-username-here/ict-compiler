@@ -1,0 +1,38 @@
+///
+/// Misc. utilities
+///
+include "ivm/intrin.scl";
+
+var NULL const *void = 0;
+
+var _st_alloc_pos *void;
+
+/// Allocate something in heap, after bss
+func st_alloc(size int64) *void {
+    if (!_st_alloc_pos)
+        _st_alloc_pos = ivm_bss_end();
+    var pos = _st_alloc_pos;
+    _st_alloc_pos += size;
+    return pos;
+}
+
+func print_xdigit(ch int8) {
+    if (ch < 10) print_char('0' + ch);
+    else print_char('a' + ch - 10);
+}
+
+func hexdump(p const *int8, count int64) {
+    while (count--) {
+        print_xdigit(*p & 0xf);
+        print_xdigit((*p >> 4) & 0xf);
+        print_char(' ');
+        p++;
+    }
+    print_char('\n');
+}
+
+/// TODO: add cast operators / structs
+func f_i64p(p *void, off int64) *int64 = p + off;
+func f_i32p(p *void, off int64) *int32 = p + off;
+func f_i16p(p *void, off int64) *int16 = p + off;
+func f_i8p (p *void, off int64) *int8  = p + off;

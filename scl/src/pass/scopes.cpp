@@ -62,6 +62,24 @@ void resolveScopes(Expr *expr, Scope *parent) {
     }
 }
 
+void resolveScopes(Type *type, Scope *parent) {
+    if (auto named = dynamic_cast<NamedType*>(type)) {
+        auto decl = parent->resolve(named->name());
+        if (!decl)
+            throw misc::SourceError(named->token(), "Unknown type name!");
+        auto tdecl = dynamic_cast<TypeDecl*>(decl);
+        if (!decl)
+            throw misc::SourceError(named->token(), "Not a type!");
+        named->setDecl(tdecl);
+    } else if (auto ptr = dynamic_cast<PointerType*>(type)) {
+        resolveScopes(ptr->to().get(), parent);
+    } else if (auto func = dynamic_cast<FunctionType*>(type)) {
+        resolveScopes(func->returnType().get(), parent);
+        for (auto i : func->args())
+            resolveScopes(i, parent);
+    }
+}
+
 void resolveScopes(Module *mod, Scope *parent) {
     for (auto i : mod->entries()) {
         if (auto func = dynamic_cast<Function*>(i)) {
@@ -86,24 +104,6 @@ void resolveScopes(Module *mod, Scope *parent) {
                     resolveScopes(i->initExpr().get(), parent);
             }
         }
-    }
-}
-
-void resolveScopes(Type *type, Scope *parent) {
-    if (auto named = dynamic_cast<NamedType*>(type)) {
-        auto decl = parent->resolve(named->name());
-        if (!decl)
-            throw misc::SourceError(named->token(), "Unknown type name!");
-        auto tdecl = dynamic_cast<TypeDecl*>(decl);
-        if (!decl)
-            throw misc::SourceError(named->token(), "Not a type!");
-        named->setDecl(tdecl);
-    } else if (auto ptr = dynamic_cast<PointerType*>(type)) {
-        resolveScopes(ptr->to().get(), parent);
-    } else if (auto func = dynamic_cast<FunctionType*>(type)) {
-        resolveScopes(func->returnType().get(), parent);
-        for (auto i : func->args())
-            resolveScopes(i, parent);
     }
 }
 

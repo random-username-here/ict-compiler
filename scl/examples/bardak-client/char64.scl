@@ -1,0 +1,8 @@
+include "ivm/printer.scl";
+
+type char64_t int64;
+
+func print_char64(c char64_t)
+{
+    while (c) print_char(c & 0xff), c >>= 8;
+}

@@ -4,6 +4,6 @@
 namespace scl {
 
 TypeDecl::TypeDecl(misc::Token name, ict::UPtr<Type> &&t)
-    :Decl(name, TypeType::create()), m_aliased(this, std::move(t)) {}
+    :Decl(name, BadType::create()), m_aliased(this, std::move(t)) {}
 
 };

@@ -1,0 +1,161 @@
+///
+/// Binmsg client
+///
+include "ivm/modem.scl";
+include "ivm/irq.scl";
+include "string.scl";
+include "./misc.scl";
+include "./char64.scl";
+
+///
+/// Config
+///
+//var HOST            const *int8 = "localhost"; // TODO: constants referencing constants
+var PORT            const int16 = 3000;
+var TIMEOUT         const int64 = 100; // 1s
+var IDLE_TIMEOUT    const int64 = 500; // 5s
+var BUF_SIZE        const int64 = 4096;
+
+///
+/// Binmsg format.
+/// Functions because we have no struct yet
+///
+type bmsg_t *void;
+func bmsg_pref  (bm bmsg_t) char64_t = *f_i64p(bm, 0);
+func bmsg_type  (bm bmsg_t) char64_t = *f_i64p(bm, 8);
+func bmsg_seq   (bm bmsg_t) int32    = *f_i32p(bm, 16);
+func bmsg_len   (bm bmsg_t) int16    = *f_i16p(bm, 20);
+func bmsg_flags (bm bmsg_t) int16    = *f_i16p(bm, 22);
+
+/// Handler types
+type cl_msg_handler_t *func(bmsg_t) void;
+type cl_tim_handler_t *func() void;
+type cl_hello_handler_t *func() void;
+
+/// Globals & setters
+var _cl_onmsg       cl_msg_handler_t;
+var _cl_ontim       cl_tim_handler_t;
+var _cl_onhello     cl_hello_handler_t;
+var _cl_seq         int32;
+
+func cl_set_msg_handler(h cl_msg_handler_t) { _cl_onmsg = h; }
+func cl_set_timer_handler(h cl_tim_handler_t) { _cl_ontim = h; }
+func cl_set_hello_handler(h cl_hello_handler_t) { _cl_onhello = h; }
+
+func _cl_tim_handler()
+{
+    if (_cl_ontim) _cl_ontim();
+    mdm_tick_timeout();
+    ivm_fini();
+}
+
+func _cl_log_sv_msg(msg bmsg_t)
+{
+    print_cstring("-> server ");
+    print_char64(bmsg_pref(msg));
+    print_char(':');
+    print_char64(bmsg_type(msg));
+    print_cstring(" #");
+    print_number(bmsg_seq(msg));
+    print_cstring(" len ");
+    print_number(bmsg_len(msg));
+    print_char('\n');
+}
+
+func cl_run()
+{
+    ivm_irq(IRQ_TIM, &_cl_tim_handler);
+    
+    var err = mdm_open("localhost", PORT, TIMEOUT);
+    if (err) {
+        print_cstring("Modem failed to connect: ");
+        print_cstring(mdm_strerr(err));
+        print_cstring("\n");
+        quit();
+    }
+
+    if (_cl_onhello)
+        _cl_onhello();
+
+    var buf *int8 = st_alloc(BUF_SIZE);
+    var bufpos = 0;
+
+    var running = true;
+    while (running) {
+        var cnt = mdm_recv(buf, BUF_SIZE - bufpos, IDLE_TIMEOUT);
+        print_cstring("Recived ");
+        print_number(cnt);
+        print_cstring(" bytes\n");
+
+        if (cnt == -1) {
+            if (mdm_err() == 0) {
+                print_cstring("Client did not recive anything in 5s, is server alive?");
+                quit();
+            }
+            print_cstring("Recive failed: ");
+            print_cstring(mdm_strerr(err));
+            print_cstring("\n");
+            quit();
+        }
+        bufpos += cnt;
+
+        var maybe_have_msg = true;
+        while (maybe_have_msg) {
+            maybe_have_msg = false;
+            if (bufpos >= 24) {
+                _cl_log_sv_msg(buf);
+                // header recived
+                var len = bmsg_len(buf);
+                if (len > BUF_SIZE - 24) {
+                    print_cstring("Too long message sent: 24 byte header + ");
+                    print_number(len);
+                    print_cstring(" body, client has buffer of size ");
+                    print_number(BUF_SIZE);
+                    print_cstring("\n");
+                    quit();
+                }
+                var msg_size = 24 + len;
+                if (bufpos >= msg_size) {
+                    // Message is ready, eat it
+                    print_cstring("-> ");
+                    hexdump(buf, msg_size);
+                    if (_cl_onmsg)
+                        _cl_onmsg(buf);
+                    // we are copying from start, no problems will arise
+                    memcpy(buf, buf + msg_size, bufpos - msg_size);
+                    bufpos -= msg_size;
+                    maybe_have_msg = true;
+                }
+            }
+        }
+
+        // TODO: break/continue
+        if (!(mdm_stat() & MDM_S_CONN)) running = false;
+    }
+
+    print_cstring("Exiting\n");
+    mdm_close();
+}
+
+func cl_send(pref char64_t, typ char64_t, len int16, data const *int8)
+{
+    print_cstring("<- client ");
+    print_char64(pref);
+    print_char(':');
+    print_char64(typ);
+    print_cstring(" #");
+    print_number(_cl_seq);
+    print_cstring(" len ");
+    print_number(len);
+    print_char('\n');
+
+    _cl_seq++;
+    var flags int16 = 0;
+    mdm_send(&pref, 8);
+    mdm_send(&typ, 8);
+    mdm_send(&_cl_seq, 4);
+    mdm_send(&len, 2);
+    mdm_send(&flags, 2);
+    mdm_send(data, len);
+
+}

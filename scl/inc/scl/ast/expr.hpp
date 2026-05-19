@@ -133,6 +133,8 @@ class Number : public Expr {
 public:
     Number(ict::Integer v) :Expr(nullptr), m_val(v) {}
     Number(misc::Token tok) :Expr(tok), m_val(tok.decodeNum()) {}
+    // booleans are numbers
+    Number(misc::Token tok, bool b) :Expr(tok), m_val(b) { type() = PrimitiveType::create(PrimitiveType::BOOL); }
     MISC_CREATEFUNC(Number);
 
     auto val() const { return m_val; }

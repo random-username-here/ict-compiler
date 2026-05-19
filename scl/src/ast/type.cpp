@@ -2,6 +2,7 @@
 #include "ict/ir.hpp"
 #include "misclib/dump_stream.hpp"
 #include <ostream>
+#include <stdexcept>
 using namespace misc::color;
 
 namespace scl {
@@ -51,8 +52,8 @@ bool Type::isPack() const {
     return p != nullptr;
 }
 
-bool Type::isType() const {
-    auto p = dynamic_cast<const TypeType*>(unwrapNamed());
+bool Type::isBadType() const {
+    auto p = dynamic_cast<const BadType*>(unwrapNamed());
     return p != nullptr;
 }
 
@@ -65,6 +66,17 @@ const Type *Type::unwrapNamed() const {
     auto t = this;
     while (1) {
         auto n = dynamic_cast<const NamedType*>(t);
+        if (!n) break;
+        if (!n->isResolved()) break;
+        t = n->resolved().get();
+    }
+    return t;
+}
+
+Type *Type::unwrapNamed() {
+    auto t = this;
+    while (1) {
+        auto n = dynamic_cast<NamedType*>(t);
         if (!n) break;
         if (!n->isResolved()) break;
         t = n->resolved().get();
@@ -158,12 +170,17 @@ bool PackType::isSameAs(const Type *o) const {
     return o->isPack();
 }
 
-void TypeType::dump(std::ostream &os) const {
-    os << RED << "type" << RST;
+void BadType::dump(std::ostream &os) const {
+    os << RED << "bad_type" << RST;
 }
 
-bool TypeType::isSameAs(const Type *o) const {
-    return o->isType();
+bool BadType::isSameAs(const Type *o) const {
+    return o->isBadType();
+}
+
+void NamedType::_checkResolved() const {
+    if (!isResolved())
+        throw std::runtime_error("Type " + std::string(name()) + " is not resolved!");
 }
 
 void NamedType::dump(std::ostream &os) const {
@@ -175,6 +192,13 @@ void NamedType::dump(std::ostream &os) const {
         os << DGRAY << " = (decl found)" << RST;
     else
         os << DGRAY << " = (unresolved)" << RST;
+}
+UPtr<Type> NamedType::copy() const {
+    auto t = NamedType::create(token());
+    t->setDecl(decl());
+    if (isResolved())
+        t->resolved() = resolved()->copy();
+    return t;
 }
 
 bool NamedType::isSameAs(const Type *o) const {

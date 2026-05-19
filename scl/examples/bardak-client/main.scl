@@ -1,0 +1,26 @@
+include "./client.scl";
+
+var sent_chose bool;
+
+func on_hello() {
+    var msg = alloca(6);
+    *f_i16p(msg, 0) = 4;
+    memcpy(msg + 2, "mage", 4);
+    cl_send('role', 'choose', 6, msg);
+}
+
+func on_message(msg bmsg_t) {
+    print_cstring("Message!\n");
+}
+
+func on_timer() {
+    
+}
+
+func main() {
+    cl_set_msg_handler(&on_message);
+    cl_set_timer_handler(&on_timer);
+    cl_set_hello_handler(&on_hello);
+    cl_run();
+    quit();
+}

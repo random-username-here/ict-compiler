@@ -1,0 +1,15 @@
+///
+/// Port of some functions from string.h
+///
+
+func strlen(str *const int8) int64
+{
+    var len = 0;
+    while (*(str++)) ++len;
+    return len;
+}
+
+func memcpy(dest *int8, src *const int8, count int64)
+{
+    while (count--) *(dest++) = *(src++);
+}

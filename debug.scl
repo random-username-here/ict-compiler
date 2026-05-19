@@ -2,33 +2,37 @@ include "ivm/intrin.scl";
 include "ivm/printer.scl";
 include "ivm/irq.scl";
 include "ivm/crt.scl";
+include "ivm/modem.scl";
+include "string.scl";
 
 var CHAR_W const int16 = 1300;
 var CHAR_ADV const int16 = 1300;
-var CHAR_H const int16 = 1900;
-var CHAR_LINE const int16 = 2000;
-var step int16;
+var CHAR_H const int16 = 1800;
+var CHAR_LINE const int16 = 1900;
+
+func draw_str(str *const int8, x int16, y int16) {
+    while (*str) {
+        crt_char(*str, CHAR_W, CHAR_H, x, y);
+        x += CHAR_ADV;
+        str++;
+    }
+}
 
 func tim_handler() {
     var y = 0;
     while (y < 16) {
         var x = 0;
         while (x < 16) {
-            crt_char(x + y * 16, CHAR_W, CHAR_H, 1024 + CHAR_ADV * x, 1024 + CHAR_LINE * y);
-            ++x;
+            crt_char(x + y * 16, CHAR_W, CHAR_H, CHAR_ADV * x + 2000, CHAR_LINE * y + 2000);
+            x++;
         }
-        ++y;
+        y++;
     }
-    step++;
-    if (step == 40) step = 0;
-    crt_char(0x90 + step / 10, CHAR_W, CHAR_H, 1024, 1024 + CHAR_LINE * 20);
-    crt_char(0xa0 + step / 10, CHAR_W, CHAR_H, 1024 + CHAR_ADV * 2, 1024 + CHAR_LINE * 20);
-    crt_char(0x80 + step / 10, CHAR_W, CHAR_H, 1024 + CHAR_ADV * 4, 1024 + CHAR_LINE * 20);
-    crt_char(0x30 + step / 4, CHAR_W, CHAR_H, 1024 + CHAR_ADV * 6, 1024 + CHAR_LINE * 20);
+    draw_str("Hello world!", 2000, 40000);
     ivm_fini();
 }
 
 func main() void {
     ivm_irq(IRQ_TIM, &tim_handler);
-    while(1) ivm_hlt();
+    while (1) ivm_hlt();
 }

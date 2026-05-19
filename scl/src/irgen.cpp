@@ -41,7 +41,8 @@ static IrExprResult l_irUnary(IRGenCtx *ctx, Unary *unary, bool valueNeeded) {
             // TODO: add ict operator
             if (!valueNeeded) return nullptr;
             auto val = irExpr(ctx, unary->val().get());
-            return ctx->emit(ict::OP_NEQ, nullptr, 0, val.value);
+            // 0 -> 1, 1 -> 0
+            return ctx->emit(ict::OP_EQ, nullptr, 0, val.value);
         }
 
         case UN_INV: {
@@ -229,15 +230,20 @@ static IrExprResult l_irBinary(IRGenCtx *ctx, Binary *binary, bool valueNeeded) 
 
     if (info.hasPointerSizeAdjust) { // pointer math
         if (binary->left()->type()->isPointer()) {
-            assert(!info.isInPlace);
+            size_t size = binary->left()->type()->unwrapNamed()->as<PointerType>()->to()->byteSize();
+            if (size == 0) size = 1;
             right.value = ctx->emit(
                     ict::OP_MUL, nullptr, right.value,
-                    binary->left()->type()->as<PointerType>()->to()->byteSize()
+                    size
             );
         } else if (binary->right()->type()->isPointer()) {
+            if (info.isInPlace)
+                throw misc::SourceError(binary->token(), "Inplace add of pointer to number");
+            size_t size = binary->right()->type()->unwrapNamed()->as<PointerType>()->to()->byteSize();
+            if (size == 0) size = 1;
             left.value = ctx->emit(
                     ict::OP_MUL, nullptr, left.value,
-                    binary->right()->type()->as<PointerType>()->to()->byteSize()
+                    size
             );
         }
     }
@@ -428,8 +434,13 @@ static void l_irFunc(ict::Module *into, Function *func) {
     scl::IRGenCtx ctx = { .curBlock = start };
     scl::irStmnt(&ctx, func->body().get());
 
-    if (func->returnType()->isVoid())
+    if (func->returnType()->isVoid()) {
         ctx.curBlock->operations().createEnd(ict::OP_RET, nullptr);
+    } else if (!ctx.blockIsEnded()) {
+        auto decl = ctx.module()->findOrDeclareFunc("_ict.sanitize.returnMissing", ict::Type::void_t());
+        ctx.emit(ict::OP_CALL, nullptr, decl);
+        ctx.emit(ict::OP_RET, nullptr, decl);
+    }
 }
 
 ict::Integer evalConst(Expr *expr) {

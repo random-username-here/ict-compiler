@@ -38,8 +38,6 @@ static void l_parseFunc(View &source, Module *into) {
         func->setImplicitReturnType(true);
     }
 
-    func->genDeclType();
-
     if (tok.type == ';') {
         source = v;
     } else if (tok.type == '{') {

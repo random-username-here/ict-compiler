@@ -20,7 +20,8 @@ func ivm_cli();
 func ivm_sti();
 
 /// Set interrupt handler
-func ivm_irq(irq ivm_irq_t, handler *func() void) {
+func ivm_irq(irq ivm_irq_t, handler *func() void)
+{
     var itab **func() void = 0x8;
     *(itab + irq) = handler;
 }
