@@ -10,7 +10,7 @@ PROGRAM=$1
 shift 1
 
 rm -f $IVM_DIR/program.s
-$ICT -I$IVM_DIR/inc $PROGRAM -o$IVM_DIR/program.s $@     # compile
+$ICT -I$IVM_DIR/std/inc $PROGRAM -o$IVM_DIR/program.s $@     # compile
 
 if [[ -f $IVM_DIR/program.s ]]; then
     $IASM $IVM_DIR/link.s $IVM_DIR/program.bin      # assemble/"link"
