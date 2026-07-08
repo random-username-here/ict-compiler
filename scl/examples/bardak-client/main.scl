@@ -1,23 +1,53 @@
-include "./client.scl";
+include "client.scl";
+include "mapper.scl";
+include "viz.scl";
+include "logic.scl";
 
 var sent_chose bool;
 
 func on_hello() {
-    var msg = alloca(6);
-    *f_i16p(msg, 0) = 4;
-    memcpy(msg + 2, "mage", 4);
-    cl_send('role', 'choose', 6, msg);
 }
 
+
 func on_message(msg bmsg_t) {
-    print_cstring("Message!\n");
+    if (bmsg_pref(msg) == 'srv' && bmsg_type(msg) == 'id') {
+        var msg = alloca(6);
+        *f_i16p(msg, 0) = 4;
+        memcpy(msg + 2, "mage", 4);
+        cl_send('role', 'choose', 6, msg);
+        return;
+    }
+    if (bmsg_pref(msg) != 'mage') {
+        print_cstring("ignore\n");
+        return;
+    }
+
+    if (bmsg_type(msg) == 'wall') {
+        var x = *f_i32p(msg, 24);
+        var y = *f_i32p(msg, 28);
+        map_set_wall(x, y);
+    } else if(bmsg_type(msg) == 'root') {
+        var x = *f_i32p(msg, 24);
+        var y = *f_i32p(msg, 28);
+        map_set_root(x, y);
+    } else if (bmsg_type(msg) == 'at') {
+        pos_x = *f_i32p(msg, 24);
+        pos_y = *f_i32p(msg, 28);
+        map_clear_visible();
+    } else if (bmsg_type(msg) == 'tick') {
+        action();
+    } else {
+        print_cstring("skip\n");
+    }
 }
 
 func on_timer() {
-    
+    viz_draw();
 }
 
 func main() {
+    rand_state = 42;
+    map_init(24, 18);
     cl_set_msg_handler(&on_message);
     cl_set_timer_handler(&on_timer);
     cl_set_hello_handler(&on_hello);

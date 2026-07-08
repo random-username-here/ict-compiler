@@ -1,9 +1,0 @@
-///
-/// printer.scl -- Printing
-/// Functions are implemented in printer.s
-///
-include once;
-
-func print_char(ch int8) void;
-func print_int(num int64) void;
-func print_cstring(str *int8) void;

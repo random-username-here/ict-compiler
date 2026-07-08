@@ -1,0 +1,79 @@
+include "mapper.scl";
+
+var behaviour char64_t;
+var tgt_x int64, tgt_y int64;
+
+func send_move(dx int8, dy int8) {
+    var msg = alloca(2);
+    *f_i8p(msg, 0) = dx;
+    *f_i8p(msg, 1) = dy;
+    cl_send('mage', 'move', 2, msg);
+}
+
+func random_retarget() { 
+    tgt_x = rand() % map_w;
+    tgt_y = rand() % map_h;   
+}
+
+func random_wandering() {
+    if (behaviour == 'wander') {
+        // already on path somewhere
+        if (pos_x != tgt_x || pos_y != tgt_y)
+            return;
+    }
+    random_retarget();
+}
+
+func action() {
+    var dx = -3;
+    var bx = 0, by = 0, bv = 10000000 /* ~inf */;
+    while (dx <= 3) {
+        var dy = -3;
+        while (dy <= 3) {
+            var px = dx + pos_x, py = dy + pos_y;
+            if (map_walkable(px, py)) {
+                var v = *heatmap_cell(px, py);
+                if (v < bv) {
+                    bv = v;
+                    bx = px;
+                    by = py;
+                }
+            }
+            ++dy;
+        }
+        ++dx;
+    }
+
+    if (bv >= *heatmap_cell(pos_x, pos_y)) {
+        //random_retarget();
+        random_wandering();
+        behaviour = 'wander';
+    } else {
+        behaviour = 'target';
+        tgt_x = bx;
+        tgt_y = by;
+    }
+
+    var tries = 5;
+    var mdx = 0, mdy = 0;
+    
+    while (tries--) {
+        var mvx = tgt_x - pos_x, mvy = tgt_y - pos_y;
+
+        mdx = 0;
+        mdy = 0;
+        if (abs(mvx) > abs(mvy)) {
+            if (mvx < 0) mdx = -1;
+            else mdx = 1;
+        } else {
+            if (mvy < 0) mdy = -1;
+            else mdx = 1;
+        }
+
+        if (!map_walkable(pos_x + mdx, pos_y + mdy)) {
+            random_retarget();
+        }
+    }
+
+    send_move(mdx, mdy);
+}

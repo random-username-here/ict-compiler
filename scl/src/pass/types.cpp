@@ -237,7 +237,7 @@ void resolveTypes(Statement *stmnt, Function *func) {
         if (ifelse->otherwise())
             resolveTypes(ifelse->otherwise().get(), func);
     } else if (auto ret = dynamic_cast<ReturnStatement*>(stmnt)) {
-        if (func->body().get() == stmnt && func->hasImplcitReturnType()) {
+        if (func->body().get() == stmnt && func->hasImplcitReturnType() && ret->expr()) {
             // deduce return type
             resolveTypes(ret->expr().get());
             return;
@@ -247,9 +247,10 @@ void resolveTypes(Statement *stmnt, Function *func) {
             throw misc::SourceError(ret->token(), "Cannot return value from void function");
         if (!ret->expr() && !func->returnType()->isVoid())
             throw misc::SourceError(ret->token(), "Must return something in non-void function");
-        if (ret->expr())
+        if (ret->expr()) {
             resolveTypes(ret->expr().get());
-        l_checkAndAddCast(ret->expr().get(), func->returnType().get(), ret->token());
+            l_checkAndAddCast(ret->expr().get(), func->returnType().get(), ret->token());
+        }
     } else if (auto whl = dynamic_cast<While*>(stmnt)) {
         auto b = PrimitiveType(PrimitiveType::BOOL);
         resolveTypes(whl->cond().get());

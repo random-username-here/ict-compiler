@@ -1,5 +1,0 @@
-include "lib/printer.scl";
-
-func main() void {
-    print_cstr("Hello world!\n");
-}

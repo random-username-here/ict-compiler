@@ -438,7 +438,8 @@ static void l_irFunc(ict::Module *into, Function *func) {
         ctx.curBlock->operations().createEnd(ict::OP_RET, nullptr);
     } else if (!ctx.blockIsEnded()) {
         auto decl = ctx.module()->findOrDeclareFunc("_ict.sanitize.returnMissing", ict::Type::void_t());
-        ctx.emit(ict::OP_CALL, nullptr, decl);
+        auto fname = ctx.module()->createString(func->name());
+        ctx.emit(ict::OP_CALL, nullptr, decl, fname);
         ctx.emit(ict::OP_RET, nullptr, decl);
     }
 }
@@ -447,6 +448,13 @@ ict::Integer evalConst(Expr *expr) {
     // TODO: expressions, other constants
     if (auto num = dynamic_cast<Number*>(expr)) {
         return num->val();
+    } else if (auto unary = dynamic_cast<Unary*>(expr)) {
+        auto val = evalConst(unary->val().get());
+        switch (unary->kind()) {
+            case UN_NEG: return -val;
+            default:
+                throw misc::SourceError(unary->token(), "Only negation is supported in consts");
+        }
     } else {
         throw misc::SourceError(expr->token(), "Constant initializers can only be numbers for now, no expressions");
     }

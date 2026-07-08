@@ -1,0 +1,93 @@
+include "ivm/crt.scl";
+include "mapper.scl";
+include "logic.scl";
+
+var SIZE const int64 = 1300;
+var FONT_W const int64 = 1100;
+var FONT_H const int64 = 1200;
+var HMAP_SCALE const int64 = 3000;
+
+func viz_draw_text(str *const int8, x int64, y int64) {
+    while (*str) {
+        crt_char(*str, FONT_W, FONT_H, x, y);
+        x += FONT_W;
+        str++;
+    }
+}
+
+func viz_draw_box(str *const int8, x int64, y int64, w int64, h int64) {
+    var LABEL_OFF const int64 = SIZE * 2;
+    var hs = SIZE / 2;
+    x -= SIZE;
+    y -= SIZE;
+
+    var lx = x + SIZE + LABEL_OFF + hs;
+    while (*str) {
+        crt_char(*str, FONT_W, FONT_H, lx, y);
+        lx += FONT_W;
+        str++;
+    }
+
+    crt_cmd(CRT_MOVETO, x + SIZE + LABEL_OFF, y + hs);
+    crt_cmd(CRT_LINETO, x + hs, y + hs);
+    crt_cmd(CRT_LINETO, x + hs, y + SIZE + h + hs);
+    crt_cmd(CRT_LINETO, x + SIZE + w + hs, y + SIZE + h + hs);
+    crt_cmd(CRT_LINETO, x + SIZE + w + hs, y + hs);
+    crt_cmd(CRT_LINETO, lx + hs, y + hs);
+}
+
+func viz_draw_map(xpos int64, ypos int64) {
+    viz_draw_box("Tile types", xpos, ypos, SIZE * map_w, SIZE * map_h);
+    var y = 0;
+    while (y < map_h) {
+        var x = 0;
+        while (x < map_w) {
+            crt_char(
+                *map_cell(x, y),
+                SIZE,
+                SIZE,
+                SIZE * x + xpos,
+                SIZE * y + ypos
+            );
+            ++x;
+        }
+        ++y;
+    }
+    crt_char(0x84, SIZE, SIZE, SIZE * pos_x + xpos, SIZE * pos_y + ypos);
+    crt_char(0xA6, SIZE, SIZE, SIZE * tgt_x + xpos, SIZE * tgt_y + ypos);
+}
+
+func viz_heatmap_char(value int64) int8 {
+    value = -value;
+    if (value < -HMAP_SCALE) value = -HMAP_SCALE;
+    if (value > HMAP_SCALE) value = HMAP_SCALE;
+    value = (value + HMAP_SCALE) * 11 / HMAP_SCALE / 2;
+    return 0x90 + value;
+}
+
+func viz_draw_heatmap(xpos int64, ypos int64) {
+    //viz_draw_box("Danger heatmap", xpos, ypos, SIZE * map_w, SIZE * map_h);
+    var y = 0;
+    while (y < map_h) {
+        var x = 0;
+        while (x < map_w) {
+            crt_char(
+                viz_heatmap_char(*heatmap_cell(x, y)),
+                SIZE,
+                SIZE,
+                SIZE * x + xpos,
+                SIZE * y + ypos
+            );
+            ++x;
+        }
+        ++y;
+    }
+    crt_char(0x84, SIZE, SIZE, SIZE * pos_x + xpos, SIZE * pos_y + ypos);
+    crt_char(0xA6, SIZE, SIZE, SIZE * tgt_x + xpos, SIZE * tgt_y + ypos);
+}
+
+func viz_draw() {
+    viz_draw_text("IVM bardak mage client", 1700, 1000);
+    //viz_draw_map(3000, 5000);
+    viz_draw_heatmap(3000, 32000);
+}

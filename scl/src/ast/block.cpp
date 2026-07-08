@@ -17,7 +17,9 @@ void ExprInBlock::dump(std::ostream &os) const {
 }
 
 void ReturnStatement::dump(std::ostream &os) const {
-    os << RED << "ReturnStatement\n" << misc::beginBlock << *expr() << misc::endBlock;
+    os << RED << "ReturnStatement\n";
+    if (expr())
+       os << misc::beginBlock << *expr() << misc::endBlock;
 }
 
 void VarDeclStatement::dump(std::ostream &os) const {

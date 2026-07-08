@@ -68,7 +68,7 @@ std::optional<std::filesystem::path> Manager::resolveInclude(View path) {
     for (auto i : m_includePaths) {
         auto result = i / path;
         if (std::filesystem::is_regular_file(result))
-            return result;
+            return std::filesystem::absolute(result);
     }
     return std::nullopt;
 }
@@ -76,7 +76,7 @@ std::optional<std::filesystem::path> Manager::resolveInclude(View path) {
 std::optional<std::filesystem::path> Manager::resolveInclude(View path, const std::filesystem::path &self) {
     auto rel = self / path;
     if (std::filesystem::is_regular_file(rel))
-        return rel;
+        return std::filesystem::absolute(rel);
     return resolveInclude(path);
 }
 
@@ -102,7 +102,7 @@ SourceFile *Manager::findFileByView(View view) {
 bool Manager::hasFile(const std::filesystem::path &file) const {
     auto abs = std::filesystem::absolute(file);
     for (auto &i : m_files)
-        if (i.abspath == abs)
+        if (std::filesystem::equivalent(i.abspath, abs))
             return true;
     return false;
 }

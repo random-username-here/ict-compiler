@@ -4,6 +4,7 @@
 #include "scl/ast/block.hpp"
 #include "scl/ast/type.hpp"
 #include "scl/parsing.hpp"
+#include "misclib/dump_stream.hpp"
 
 namespace scl {
 
@@ -71,6 +72,7 @@ bool parseTopLevel(View &source, Module *into, const std::filesystem::path &file
         auto path = ict::Manager::main()->resolveInclude(name.decodeStr(), file.parent_path());
         if (!path)
             throw misc::SourceError(name, "That file was not found");
+        misc::info("scl.include") << "Including " << *path;
 
         if (ict::Manager::main()->hasFile(*path))
             return true; // skip, it was already added

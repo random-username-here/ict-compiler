@@ -151,111 +151,111 @@ font:
     .i64 4044  // Character 0x94 -- `\94`
     .i64 4054  // Character 0x95 -- `\95`
     .i64 4064  // Character 0x96 -- `\96`
-    .i64 4066  // Character 0x97 -- `\97`
-    .i64 4068  // Character 0x98 -- `\98`
-    .i64 4070  // Character 0x99 -- `\99`
-    .i64 4072  // Character 0x9a -- `\9a`
-    .i64 4074  // Character 0x9b -- `\9b`
-    .i64 4076  // Character 0x9c -- `\9c`
-    .i64 4078  // Character 0x9d -- `\9d`
-    .i64 4080  // Character 0x9e -- `\9e`
-    .i64 4082  // Character 0x9f -- `\9f`
-    .i64 4084  // Character 0xa0 -- `\a0`
-    .i64 4096  // Character 0xa1 -- `\a1`
-    .i64 4108  // Character 0xa2 -- `\a2`
-    .i64 4120  // Character 0xa3 -- `\a3`
-    .i64 4132  // Character 0xa4 -- `\a4`
-    .i64 4138  // Character 0xa5 -- `\a5`
-    .i64 4144  // Character 0xa6 -- `\a6`
-    .i64 4192  // Character 0xa7 -- `\a7`
-    .i64 4194  // Character 0xa8 -- `\a8`
-    .i64 4196  // Character 0xa9 -- `\a9`
-    .i64 4198  // Character 0xaa -- `\aa`
-    .i64 4200  // Character 0xab -- `\ab`
-    .i64 4202  // Character 0xac -- `\ac`
-    .i64 4204  // Character 0xad -- `\ad`
-    .i64 4206  // Character 0xae -- `\ae`
-    .i64 4208  // Character 0xaf -- `\af`
-    .i64 4210  // Character 0xb0 -- `\b0`
-    .i64 4272  // Character 0xb1 -- `\b1`
-    .i64 4322  // Character 0xb2 -- `\b2`
-    .i64 4352  // Character 0xb3 -- `\b3`
-    .i64 4392  // Character 0xb4 -- `\b4`
-    .i64 4464  // Character 0xb5 -- `\b5`
-    .i64 4490  // Character 0xb6 -- `\b6`
-    .i64 4528  // Character 0xb7 -- `\b7`
-    .i64 4556  // Character 0xb8 -- `\b8`
-    .i64 4594  // Character 0xb9 -- `\b9`
-    .i64 4620  // Character 0xba -- `\ba`
-    .i64 4622  // Character 0xbb -- `\bb`
-    .i64 4624  // Character 0xbc -- `\bc`
-    .i64 4626  // Character 0xbd -- `\bd`
-    .i64 4628  // Character 0xbe -- `\be`
-    .i64 4630  // Character 0xbf -- `\bf`
-    .i64 4632  // Character 0xc0 -- `\c0`
-    .i64 4656  // Character 0xc1 -- `\c1`
-    .i64 4700  // Character 0xc2 -- `\c2`
-    .i64 4702  // Character 0xc3 -- `\c3`
-    .i64 4704  // Character 0xc4 -- `\c4`
-    .i64 4706  // Character 0xc5 -- `\c5`
-    .i64 4708  // Character 0xc6 -- `\c6`
-    .i64 4710  // Character 0xc7 -- `\c7`
-    .i64 4712  // Character 0xc8 -- `\c8`
-    .i64 4714  // Character 0xc9 -- `\c9`
-    .i64 4716  // Character 0xca -- `\ca`
-    .i64 4718  // Character 0xcb -- `\cb`
-    .i64 4720  // Character 0xcc -- `\cc`
-    .i64 4722  // Character 0xcd -- `\cd`
-    .i64 4724  // Character 0xce -- `\ce`
-    .i64 4726  // Character 0xcf -- `\cf`
-    .i64 4728  // Character 0xd0 -- `\d0`
-    .i64 4730  // Character 0xd1 -- `\d1`
-    .i64 4732  // Character 0xd2 -- `\d2`
-    .i64 4734  // Character 0xd3 -- `\d3`
-    .i64 4736  // Character 0xd4 -- `\d4`
-    .i64 4738  // Character 0xd5 -- `\d5`
-    .i64 4740  // Character 0xd6 -- `\d6`
-    .i64 4742  // Character 0xd7 -- `\d7`
-    .i64 4744  // Character 0xd8 -- `\d8`
-    .i64 4746  // Character 0xd9 -- `\d9`
-    .i64 4748  // Character 0xda -- `\da`
-    .i64 4750  // Character 0xdb -- `\db`
-    .i64 4752  // Character 0xdc -- `\dc`
-    .i64 4754  // Character 0xdd -- `\dd`
-    .i64 4756  // Character 0xde -- `\de`
-    .i64 4758  // Character 0xdf -- `\df`
-    .i64 4760  // Character 0xe0 -- `\e0`
-    .i64 4762  // Character 0xe1 -- `\e1`
-    .i64 4764  // Character 0xe2 -- `\e2`
-    .i64 4766  // Character 0xe3 -- `\e3`
-    .i64 4768  // Character 0xe4 -- `\e4`
-    .i64 4770  // Character 0xe5 -- `\e5`
-    .i64 4772  // Character 0xe6 -- `\e6`
-    .i64 4774  // Character 0xe7 -- `\e7`
-    .i64 4776  // Character 0xe8 -- `\e8`
-    .i64 4778  // Character 0xe9 -- `\e9`
-    .i64 4780  // Character 0xea -- `\ea`
-    .i64 4782  // Character 0xeb -- `\eb`
-    .i64 4784  // Character 0xec -- `\ec`
-    .i64 4786  // Character 0xed -- `\ed`
-    .i64 4788  // Character 0xee -- `\ee`
-    .i64 4790  // Character 0xef -- `\ef`
-    .i64 4792  // Character 0xf0 -- `\f0`
-    .i64 4794  // Character 0xf1 -- `\f1`
-    .i64 4796  // Character 0xf2 -- `\f2`
-    .i64 4798  // Character 0xf3 -- `\f3`
-    .i64 4800  // Character 0xf4 -- `\f4`
-    .i64 4802  // Character 0xf5 -- `\f5`
-    .i64 4804  // Character 0xf6 -- `\f6`
-    .i64 4806  // Character 0xf7 -- `\f7`
-    .i64 4808  // Character 0xf8 -- `\f8`
-    .i64 4810  // Character 0xf9 -- `\f9`
-    .i64 4812  // Character 0xfa -- `\fa`
-    .i64 4814  // Character 0xfb -- `\fb`
-    .i64 4816  // Character 0xfc -- `\fc`
-    .i64 4818  // Character 0xfd -- `\fd`
-    .i64 4820  // Character 0xfe -- `\fe`
-    .i64 4822  // Character 0xff -- `\ff`
+    .i64 4080  // Character 0x97 -- `\97`
+    .i64 4096  // Character 0x98 -- `\98`
+    .i64 4112  // Character 0x99 -- `\99`
+    .i64 4128  // Character 0x9a -- `\9a`
+    .i64 4144  // Character 0x9b -- `\9b`
+    .i64 4146  // Character 0x9c -- `\9c`
+    .i64 4148  // Character 0x9d -- `\9d`
+    .i64 4150  // Character 0x9e -- `\9e`
+    .i64 4152  // Character 0x9f -- `\9f`
+    .i64 4154  // Character 0xa0 -- `\a0`
+    .i64 4166  // Character 0xa1 -- `\a1`
+    .i64 4178  // Character 0xa2 -- `\a2`
+    .i64 4190  // Character 0xa3 -- `\a3`
+    .i64 4202  // Character 0xa4 -- `\a4`
+    .i64 4208  // Character 0xa5 -- `\a5`
+    .i64 4214  // Character 0xa6 -- `\a6`
+    .i64 4262  // Character 0xa7 -- `\a7`
+    .i64 4264  // Character 0xa8 -- `\a8`
+    .i64 4266  // Character 0xa9 -- `\a9`
+    .i64 4268  // Character 0xaa -- `\aa`
+    .i64 4270  // Character 0xab -- `\ab`
+    .i64 4272  // Character 0xac -- `\ac`
+    .i64 4274  // Character 0xad -- `\ad`
+    .i64 4276  // Character 0xae -- `\ae`
+    .i64 4278  // Character 0xaf -- `\af`
+    .i64 4280  // Character 0xb0 -- `\b0`
+    .i64 4342  // Character 0xb1 -- `\b1`
+    .i64 4392  // Character 0xb2 -- `\b2`
+    .i64 4422  // Character 0xb3 -- `\b3`
+    .i64 4462  // Character 0xb4 -- `\b4`
+    .i64 4534  // Character 0xb5 -- `\b5`
+    .i64 4560  // Character 0xb6 -- `\b6`
+    .i64 4598  // Character 0xb7 -- `\b7`
+    .i64 4626  // Character 0xb8 -- `\b8`
+    .i64 4664  // Character 0xb9 -- `\b9`
+    .i64 4690  // Character 0xba -- `\ba`
+    .i64 4692  // Character 0xbb -- `\bb`
+    .i64 4694  // Character 0xbc -- `\bc`
+    .i64 4696  // Character 0xbd -- `\bd`
+    .i64 4698  // Character 0xbe -- `\be`
+    .i64 4700  // Character 0xbf -- `\bf`
+    .i64 4702  // Character 0xc0 -- `\c0`
+    .i64 4726  // Character 0xc1 -- `\c1`
+    .i64 4770  // Character 0xc2 -- `\c2`
+    .i64 4772  // Character 0xc3 -- `\c3`
+    .i64 4774  // Character 0xc4 -- `\c4`
+    .i64 4776  // Character 0xc5 -- `\c5`
+    .i64 4778  // Character 0xc6 -- `\c6`
+    .i64 4780  // Character 0xc7 -- `\c7`
+    .i64 4782  // Character 0xc8 -- `\c8`
+    .i64 4784  // Character 0xc9 -- `\c9`
+    .i64 4786  // Character 0xca -- `\ca`
+    .i64 4788  // Character 0xcb -- `\cb`
+    .i64 4790  // Character 0xcc -- `\cc`
+    .i64 4792  // Character 0xcd -- `\cd`
+    .i64 4794  // Character 0xce -- `\ce`
+    .i64 4796  // Character 0xcf -- `\cf`
+    .i64 4798  // Character 0xd0 -- `\d0`
+    .i64 4800  // Character 0xd1 -- `\d1`
+    .i64 4802  // Character 0xd2 -- `\d2`
+    .i64 4804  // Character 0xd3 -- `\d3`
+    .i64 4806  // Character 0xd4 -- `\d4`
+    .i64 4808  // Character 0xd5 -- `\d5`
+    .i64 4810  // Character 0xd6 -- `\d6`
+    .i64 4812  // Character 0xd7 -- `\d7`
+    .i64 4814  // Character 0xd8 -- `\d8`
+    .i64 4816  // Character 0xd9 -- `\d9`
+    .i64 4818  // Character 0xda -- `\da`
+    .i64 4820  // Character 0xdb -- `\db`
+    .i64 4822  // Character 0xdc -- `\dc`
+    .i64 4824  // Character 0xdd -- `\dd`
+    .i64 4826  // Character 0xde -- `\de`
+    .i64 4828  // Character 0xdf -- `\df`
+    .i64 4830  // Character 0xe0 -- `\e0`
+    .i64 4832  // Character 0xe1 -- `\e1`
+    .i64 4834  // Character 0xe2 -- `\e2`
+    .i64 4836  // Character 0xe3 -- `\e3`
+    .i64 4838  // Character 0xe4 -- `\e4`
+    .i64 4840  // Character 0xe5 -- `\e5`
+    .i64 4842  // Character 0xe6 -- `\e6`
+    .i64 4844  // Character 0xe7 -- `\e7`
+    .i64 4846  // Character 0xe8 -- `\e8`
+    .i64 4848  // Character 0xe9 -- `\e9`
+    .i64 4850  // Character 0xea -- `\ea`
+    .i64 4852  // Character 0xeb -- `\eb`
+    .i64 4854  // Character 0xec -- `\ec`
+    .i64 4856  // Character 0xed -- `\ed`
+    .i64 4858  // Character 0xee -- `\ee`
+    .i64 4860  // Character 0xef -- `\ef`
+    .i64 4862  // Character 0xf0 -- `\f0`
+    .i64 4864  // Character 0xf1 -- `\f1`
+    .i64 4866  // Character 0xf2 -- `\f2`
+    .i64 4868  // Character 0xf3 -- `\f3`
+    .i64 4870  // Character 0xf4 -- `\f4`
+    .i64 4872  // Character 0xf5 -- `\f5`
+    .i64 4874  // Character 0xf6 -- `\f6`
+    .i64 4876  // Character 0xf7 -- `\f7`
+    .i64 4878  // Character 0xf8 -- `\f8`
+    .i64 4880  // Character 0xf9 -- `\f9`
+    .i64 4882  // Character 0xfa -- `\fa`
+    .i64 4884  // Character 0xfb -- `\fb`
+    .i64 4886  // Character 0xfc -- `\fc`
+    .i64 4888  // Character 0xfd -- `\fd`
+    .i64 4890  // Character 0xfe -- `\fe`
+    .i64 4892  // Character 0xff -- `\ff`
 
 // Character 0x00 -- `\00`
     .i16 0x0000
@@ -1559,25 +1559,60 @@ font:
     .i16 0x0000
 
 // Character 0x95 -- `\95`
-    .i16 0x0187
-    .i16 0x02a9
-    .i16 0x01a7
-    .i16 0x0289
+    .i16 0x0168
+    .i16 0x02a8
+    .i16 0x018a
+    .i16 0x0286
     .i16 0x0000
 
 // Character 0x96 -- `\96`
+    .i16 0x0158
+    .i16 0x028b
+    .i16 0x02b8
+    .i16 0x0296
+    .i16 0x0287
+    .i16 0x0276
+    .i16 0x0258
     .i16 0x0000
 
 // Character 0x97 -- `\97`
+    .i16 0x0137
+    .i16 0x027b
+    .i16 0x02b7
+    .i16 0x0295
+    .i16 0x0276
+    .i16 0x0255
+    .i16 0x0237
     .i16 0x0000
 
 // Character 0x98 -- `\98`
+    .i16 0x0137
+    .i16 0x028c
+    .i16 0x02d7
+    .i16 0x02b4
+    .i16 0x0286
+    .i16 0x0254
+    .i16 0x0237
     .i16 0x0000
 
 // Character 0x99 -- `\99`
+    .i16 0x0126
+    .i16 0x028c
+    .i16 0x02e6
+    .i16 0x02b3
+    .i16 0x0285
+    .i16 0x0253
+    .i16 0x0226
     .i16 0x0000
 
 // Character 0x9a -- `\9a`
+    .i16 0x0117
+    .i16 0x028e
+    .i16 0x02f7
+    .i16 0x02b3
+    .i16 0x0286
+    .i16 0x0253
+    .i16 0x0217
     .i16 0x0000
 
 // Character 0x9b -- `\9b`

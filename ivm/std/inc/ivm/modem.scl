@@ -58,8 +58,10 @@ func _mdm_waitbit(bit mdm_stat_t)
 func _mdm_waitbit_tim(bit mdm_stat_t, timeout int64) bool
 {
     _mdm_timer = timeout;
-    while (!(*MDM_R_STAT & bit) && _mdm_timer > 0)
+    while (!(*MDM_R_STAT & bit) && _mdm_timer > 0) {
+        print_number(*MDM_R_STAT); print_char('\n');
         ivm_hlt();
+    }
     return mdm_stat() & bit;
 }
 

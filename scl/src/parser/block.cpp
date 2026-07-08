@@ -98,7 +98,10 @@ UPtr<Statement> parseStatement(View &source) {
         return ds;
     } else if (tok.type == misc::TOK_NAME && tok.view == "return") {
         source = v;
-        auto expr = parseExpr(source, misc::TOK_SEMICOL);
+        v = misc::tokenize(source, misc::TOKF_NONE, &tok);
+        misc::UPtr<Expr> expr;
+        if (tok.type != misc::TOK_SEMICOL)
+            expr = parseExpr(source, misc::TOK_SEMICOL);
         auto semicol = misc::tokenize(source, misc::TOKF_NONE);
         if (semicol.type != misc::TOK_SEMICOL)
             throw misc::SourceError(semicol, "Semicolon expected");

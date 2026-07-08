@@ -8,8 +8,6 @@ Ideas:
     lang    : make types expressions
 
 Good to have:
-    lang    : short-circuiting && and ||
-    lang    : strings -> backend blobs
     lang    : init, fini
     opt     : constant expression folding
     lang    : for
@@ -18,9 +16,11 @@ Good to have:
     lang    : cast operator: `x as *int8`
 
 Must be done:
-    lang    : include [easy]
 
 Done:
+    lang    : include [easy]
+    lang    : strings -> backend blobs
+    lang    : short-circuiting && and ||
     lang    : consts
     ict     : decl [easy]
     ict     : bss_impl [mid]

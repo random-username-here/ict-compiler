@@ -44,6 +44,7 @@ func cl_set_hello_handler(h cl_hello_handler_t) { _cl_onhello = h; }
 
 func _cl_tim_handler()
 {
+    ++cur_tick;
     if (_cl_ontim) _cl_ontim();
     mdm_tick_timeout();
     ivm_fini();
@@ -82,6 +83,7 @@ func cl_run()
 
     var running = true;
     while (running) {
+        print_cstring("Polling...\n");
         var cnt = mdm_recv(buf, BUF_SIZE - bufpos, IDLE_TIMEOUT);
         print_cstring("Recived ");
         print_number(cnt);
@@ -119,11 +121,21 @@ func cl_run()
                     // Message is ready, eat it
                     print_cstring("-> ");
                     hexdump(buf, msg_size);
+                    print_cstring("handler\n");
                     if (_cl_onmsg)
                         _cl_onmsg(buf);
+                    print_cstring("end handler\n");
                     // we are copying from start, no problems will arise
-                    memcpy(buf, buf + msg_size, bufpos - msg_size);
+                    var c = 0, bp = buf, sp = buf + msg_size;
+                    while (c < bufpos - msg_size) {
+                        *bp = *sp;
+                        ++bp;
+                        ++sp;
+                        c++;
+                    }
                     bufpos -= msg_size;
+                    print_number(bufpos);
+                    print_cstring(" left in buffer\n");
                     maybe_have_msg = true;
                 }
             }

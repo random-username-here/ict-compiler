@@ -1,0 +1,692 @@
+[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mLoading mods
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/ict/ir/ict.ir.frontend.mod[0m
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/ict/passes/dehumanify/ict.dehumanify.mod[0m
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/ict/arch/ivm/backend/libict.ivm.backend.mod[0m
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/ict/arch/ivm/hl2ll/ict.ivm.hl2ll.mod[0m
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/ict/arch/ivm/basic-stackplan/ict.ivm.stackplan.mod[0m
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/ict/arch/ivm/passes/reorder/ict.ivm.reorder.mod[0m
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/ict/analyses/numbering/ict.an.numbering.mod[0m
+[0m[92m              modlib [90m> [0m[94minfo[0m[90m > [0mLoading mod [94m/home/i-s-d/code/ded/final/build/scl/ict.ir.frontend.mod[0m
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mLoaded mods:
+[94m                                  ict.ir.frontend[90m -- [0mICT frontend for reading IR from file[93m [ict::Frontend for ict-ir]
+[94m                                  ict.dehumanify[90m -- [0mICT pass to pull constants out of non-`Const` operands[94m [ict::Pass of order -1000]
+[94m                                  ict.ivm.backend[90m -- [0mICT backend for IVM[95m [ict::Backend for ivm]
+[94m                                  ict.ivm.hl2ll[90m -- [0mICT IVM pass to convert high-level IR to low-level[94m [ict::Pass of order 0]
+[94m                                  ict.ivm.basic-stackplan[90m -- [0mICT IVM pass allocate stack slots -- version which gives a new slot for each variable[94m [ict::Pass of order 100]
+[94m                                  ict.ivm.reorder[90m -- [0mICT IVM pass to reorder operations so we don't spill vreg which is used only once[94m [ict::Pass of order 80]
+[94m                                  ict.an.numbering[90m -- [0mICT analysis which enumerates all function's arguments, blocks and operations[92m [ict::Anaylsis]
+[94m                                  scl.frontend[90m -- [0mICT frontend for SCL language[93m [ict::Frontend for scl]
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mAdding include path [94m"./inc"[0m
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mReading file [94m../debug.scl[0m
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0m[94m../debug.scl[0m contents:
+[92m                                  include "ivm/printer.scl";
+                                  
+                                  func abs(v int64) int64 {
+                                      if (v < 0) return -v;
+                                      return v;
+                                  }
+                                  func main() void {
+                                      print_number(abs(-123)); print_char('\n');
+                                      print_number(abs(123)); print_char('\n');
+                                  }
+[0m[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mWill be using [94mscl[0m frontend
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mParsing [94m"../debug.scl"[0m
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mParsing module...
+[0m[93m         scl.include [90m> [0m[94minfo[0m[90m > [0mIncluding "/home/i-s-d/code/ded/final/ivm/./inc/ivm/printer.scl"
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token { `{`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token n `if`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token n `return`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token n `return`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token { `{`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token n `print_number`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token n `print_char`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mstr `
+                              ` -- 1
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token n `print_number`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mParseStatement token n `print_char`
+[0m[93m           scl.parse [90m> [0m[92mverb[0m[90m > [0mstr `
+                              ` -- 1
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mParsed module:
+[1m[92m                                  Module
+[0m[1m[92m                                      Function[0m print_number[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m n [96mint64[0m
+[1m[92m                                      Function[0m print_char[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m n [96mint64[0m
+[1m[92m                                      Function[0m print_cstring[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m s [94m*[0m[96mint8[0m
+[1m[92m                                      Function[0m abs
+[90m                                          returns: [0m[96mint64[0m
+[90m                                          arg: [0m[92mFunctionArg[0m v [96mint64[0m
+[90m                                          body: [0m[91mBlock
+[91m                                              IfElse [0m
+[90m                                                  cond: [0m[94mBinary[95m LT[0m
+[90m                                                      l: [0m[94mName[0m v[90m[90m (not resolved yet)
+[0m[90m                                                      r: [0m[94mNumber[93m 0[0m
+[90m                                                  then: [0m[91mReturnStatement
+[94m                                                      Unary[95m NEG[0m
+[94m                                                          Name[0m v[90m[90m (not resolved yet)
+[0m[91m                                              ReturnStatement
+[94m                                                  Name[0m v[90m[90m (not resolved yet)
+[0m[1m[92m                                      Function[0m main
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          body: [0m[91mBlock
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_number[90m[90m (not resolved yet)
+[0m[90m                                                      r: [0m[94mBinary[95m SPACE[0m
+[90m                                                          l: [0m[94mName[0m abs[90m[90m (not resolved yet)
+[0m[90m                                                          r: [0m[94mUnary[95m NEG[0m
+[94m                                                              Number[93m 123[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_char[90m[90m (not resolved yet)
+[0m[90m                                                      r: [0m[94mNumber[93m 10[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_number[90m[90m (not resolved yet)
+[0m[90m                                                      r: [0m[94mBinary[95m SPACE[0m
+[90m                                                          l: [0m[94mName[0m abs[90m[90m (not resolved yet)
+[0m[90m                                                          r: [0m[94mNumber[93m 123[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_char[90m[90m (not resolved yet)
+[0m[90m                                                      r: [0m[94mNumber[93m 10[0m
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mResolving scopes...
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mWith scopes generated:
+[1m[92m                                  Module
+[0m[1m[92m                                      Function[0m print_number[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m n [96mint64[0m
+[1m[92m                                      Function[0m print_char[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m n [96mint64[0m
+[1m[92m                                      Function[0m print_cstring[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m s [94m*[0m[96mint8[0m
+[1m[92m                                      Function[0m abs
+[90m                                          returns: [0m[96mint64[0m
+[90m                                          arg: [0m[92mFunctionArg[0m v [96mint64[0m
+[90m                                          body: [0m[91mBlock
+[91m                                              IfElse [0m
+[90m                                                  cond: [0m[94mBinary[95m LT[0m
+[90m                                                      l: [0m[94mName[0m v[90m[90m (resolved to [0mv [96mint64[0m[90m)
+[0m[90m                                                      r: [0m[94mNumber[93m 0[0m
+[90m                                                  then: [0m[91mReturnStatement
+[94m                                                      Unary[95m NEG[0m
+[94m                                                          Name[0m v[90m[90m (resolved to [0mv [96mint64[0m[90m)
+[0m[91m                                              ReturnStatement
+[94m                                                  Name[0m v[90m[90m (resolved to [0mv [96mint64[0m[90m)
+[0m[1m[92m                                      Function[0m main
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          body: [0m[91mBlock
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_number[90m[90m (resolved to [0mprint_number[90m (type not known yet)[90m)
+[0m[90m                                                      r: [0m[94mBinary[95m SPACE[0m
+[90m                                                          l: [0m[94mName[0m abs[90m[90m (resolved to [0mabs[90m (type not known yet)[90m)
+[0m[90m                                                          r: [0m[94mUnary[95m NEG[0m
+[94m                                                              Number[93m 123[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_char[90m[90m (resolved to [0mprint_char[90m (type not known yet)[90m)
+[0m[90m                                                      r: [0m[94mNumber[93m 10[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_number[90m[90m (resolved to [0mprint_number[90m (type not known yet)[90m)
+[0m[90m                                                      r: [0m[94mBinary[95m SPACE[0m
+[90m                                                          l: [0m[94mName[0m abs[90m[90m (resolved to [0mabs[90m (type not known yet)[90m)
+[0m[90m                                                          r: [0m[94mNumber[93m 123[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m
+[90m                                                      l: [0m[94mName[0m print_char[90m[90m (resolved to [0mprint_char[90m (type not known yet)[90m)
+[0m[90m                                                      r: [0m[94mNumber[93m 10[0m
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mResolving types...
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0mResolving types for print_number
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... return type is [96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... arg n is [96mint64[0m
+[0m[93m           scl.types [90m> [0m[94minfo[0m[90m > [0mResolved types for print_number as [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0mResolving types for print_char
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... return type is [96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... arg n is [96mint64[0m
+[0m[93m           scl.types [90m> [0m[94minfo[0m[90m > [0mResolved types for print_char as [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0mResolving types for print_cstring
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... return type is [96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... arg s is [94m*[0m[96mint8[0m
+[0m[93m           scl.types [90m> [0m[94minfo[0m[90m > [0mResolved types for print_cstring as [91mfunc [90m([0m[94m*[0m[96mint8[0m[90m) [0m[96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0mResolving types for abs
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... return type is [96mint64[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... arg v is [96mint64[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve v -> [96mint64[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve v -> [96mint64[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve v -> [96mint64[0m
+[0m[93m           scl.types [90m> [0m[94minfo[0m[90m > [0mResolved types for abs as [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mint64[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0mResolving types for main
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... return type is [96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve print_number -> [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve abs -> [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mint64[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve print_char -> [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve print_number -> [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve abs -> [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mint64[0m
+[0m[93m           scl.types [90m> [0m[92mverb[0m[90m > [0m... resolve print_char -> [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[0m[93m           scl.types [90m> [0m[94minfo[0m[90m > [0mResolved types for main as [91mfunc [90m([0m[90m) [0m[96mvoid[0m
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mWith types resolved:
+[1m[92m                                  Module
+[0m[1m[92m                                      Function[0m print_number[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m n [96mint64[0m
+[1m[92m                                      Function[0m print_char[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m n [96mint64[0m
+[1m[92m                                      Function[0m print_cstring[90m (decl)[0m
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          arg: [0m[92mFunctionArg[0m s [94m*[0m[96mint8[0m
+[1m[92m                                      Function[0m abs
+[90m                                          returns: [0m[96mint64[0m
+[90m                                          arg: [0m[92mFunctionArg[0m v [96mint64[0m
+[90m                                          body: [0m[91mBlock
+[91m                                              IfElse [0m
+[90m                                                  cond: [0m[94mBinary[95m LT[0m[90m -> [0m[96mbool[0m
+[90m                                                      l: [0m[94mName[0m v[90m[90m (resolved to [0mv [96mint64[0m[90m)
+[0m[90m                                                      r: [0m[94mNumber[93m 0[0m
+[90m                                                  then: [0m[91mReturnStatement
+[94m                                                      Unary[95m NEG[0m[90m -> [0m[96mint64[0m
+[94m                                                          Name[0m v[90m[90m (resolved to [0mv [96mint64[0m[90m)
+[0m[91m                                              ReturnStatement
+[94m                                                  Name[0m v[90m[90m (resolved to [0mv [96mint64[0m[90m)
+[0m[1m[92m                                      Function[0m main
+[90m                                          returns: [0m[96mvoid[0m
+[90m                                          body: [0m[91mBlock
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m[90m -> [0m[96mvoid[0m
+[90m                                                      l: [0m[94mUnary[95m REF[0m[90m -> [0m[94m*[0m[91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[94m                                                          Name[0m print_number[90m[90m (resolved to [0mprint_number [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m[90m)
+[0m[90m                                                      r: [0m[94mArgPack[0m
+[90m                                                          0: [0m[94mBinary[95m SPACE[0m[90m -> [0m[96mint64[0m
+[90m                                                              l: [0m[94mUnary[95m REF[0m[90m -> [0m[94m*[0m[91mfunc [90m([0m[96mint64[0m[90m) [0m[96mint64[0m
+[94m                                                                  Name[0m abs[90m[90m (resolved to [0mabs [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mint64[0m[90m)
+[0m[90m                                                              r: [0m[94mArgPack[0m
+[90m                                                                  0: [0m[94mUnary[95m NEG[0m[90m -> [0m[96mint64[0m
+[94m                                                                      Number[93m 123[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m[90m -> [0m[96mvoid[0m
+[90m                                                      l: [0m[94mUnary[95m REF[0m[90m -> [0m[94m*[0m[91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[94m                                                          Name[0m print_char[90m[90m (resolved to [0mprint_char [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m[90m)
+[0m[90m                                                      r: [0m[94mArgPack[0m
+[90m                                                          0: [0m[94mNumber[93m 10[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m[90m -> [0m[96mvoid[0m
+[90m                                                      l: [0m[94mUnary[95m REF[0m[90m -> [0m[94m*[0m[91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[94m                                                          Name[0m print_number[90m[90m (resolved to [0mprint_number [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m[90m)
+[0m[90m                                                      r: [0m[94mArgPack[0m
+[90m                                                          0: [0m[94mBinary[95m SPACE[0m[90m -> [0m[96mint64[0m
+[90m                                                              l: [0m[94mUnary[95m REF[0m[90m -> [0m[94m*[0m[91mfunc [90m([0m[96mint64[0m[90m) [0m[96mint64[0m
+[94m                                                                  Name[0m abs[90m[90m (resolved to [0mabs [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mint64[0m[90m)
+[0m[90m                                                              r: [0m[94mArgPack[0m
+[90m                                                                  0: [0m[94mNumber[93m 123[0m
+[91m                                              ExprInBlock
+[94m                                                  Binary[95m SPACE[0m[90m -> [0m[96mvoid[0m
+[90m                                                      l: [0m[94mUnary[95m REF[0m[90m -> [0m[94m*[0m[91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m
+[94m                                                          Name[0m print_char[90m[90m (resolved to [0mprint_char [91mfunc [90m([0m[96mint64[0m[90m) [0m[96mvoid[0m[90m)
+[0m[90m                                                      r: [0m[94mArgPack[0m
+[90m                                                          0: [0m[94mNumber[93m 10[0m
+[0m[95m            scl.main [90m> [0m[94minfo[0m[90m > [0mGenerating IR...
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mSum of all frontends:
+[95m[1m                                  Module [0munnamed
+[90m                                      // decls:
+[95m                                      func_decl [0m[1m@print_number[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_char[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_cstring[0m[90m ([0m[91m%s [0m[96mptr[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@abs[0m[90m ([0m[91m%v [0m[96mi64[0m[93m[0m[90m) [0m[96mi64[0m[93m[0m[90m;[0m
+[95m                                      func_decl [0m[1m@main[0m[90m ([0m[90m) [0m[96mvoid[0m[93m[0m[90m;[0m
+[90m                                      // impls:
+[95m                                      func_impl [0m[1m@abs[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %3 [0mArgPtr[93m[0m [91m%v[0m[90m;
+[0m[94m                                              %4 [0mLoad[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m[90m;
+[0m[94m                                              %5 [0mConst[93m[0m [93m0[0m[90m;
+[0m[94m                                              %6 [0mLt[93m[0m [94m%4[0m [94m%5[0m[90m;
+[0m                                              Bc[93m[0m [94m%6[0m [92m%8[0m [92m%12[0m[90m;
+[0m[92m                                          %8[90m:[0m[93m !if.then[0m[90m // preds = %start [0m
+[94m                                              %9 [0mLoad[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m[90m;
+[0m[94m                                              %10 [0mSub[93m[0m [93m0[0m [94m%9[0m[90m;
+[0m                                              Ret[93m[0m [94m%10[0m[90m;
+[0m[92m                                          %12[90m:[0m[93m !if.followup[0m[90m // preds = %start [0m
+[94m                                              %13 [0mLoad[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m[90m;
+[0m                                              Ret[93m[0m [94m%13[0m[90m;
+[0m[90m                                      }
+[0m[95m                                      func_impl [0m[1m@main[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %2 [0mGlobalPtr[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %3 [0mGlobalPtr[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %4 [0mConst[93m[0m [93m123[0m[90m;
+[0m[94m                                              %5 [0mSub[93m[0m [93m0[0m [94m%4[0m[90m;
+[0m[94m                                              %6 [0mCall[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m [94m%5[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%2[0m [94m%6[0m[90m;
+[0m[94m                                              %8 [0mGlobalPtr[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %9 [0mConst[93m[0m [93m10[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%8[0m [94m%9[0m[90m;
+[0m[94m                                              %11 [0mGlobalPtr[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %12 [0mGlobalPtr[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %13 [0mConst[93m[0m [93m123[0m[90m;
+[0m[94m                                              %14 [0mCall[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%12[0m [94m%13[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%11[0m [94m%14[0m[90m;
+[0m[94m                                              %16 [0mGlobalPtr[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %17 [0mConst[93m[0m [93m10[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%16[0m [94m%17[0m[90m;
+[0m                                              Ret[93m[0m[90m;
+[0m[90m                                      }
+[0m[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mVerifying...
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%start[90m:[93m1[90m([94mArgPtr[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%start[90m:[93m2[90m([94mLoad[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%start[90m:[93m3[90m([94mConst[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%start[90m:[93m4[90m([94mLt[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%start[90m:[93m5[90m([94mBc[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%0x560968cfda50[90m:[93m1[90m([94mLoad[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%0x560968cfda50[90m:[93m3[90m([94mRet[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%0x560968cfdb00[90m:[93m1[90m([94mLoad[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@abs[0m[90m:[92m%0x560968cfdb00[90m:[93m2[90m([94mRet[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m1[90m([94mGlobalPtr[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m2[90m([94mGlobalPtr[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m3[90m([94mConst[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m5[90m([94mCall[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m6[90m([94mCall[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m7[90m([94mGlobalPtr[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m8[90m([94mConst[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m9[90m([94mCall[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m10[90m([94mGlobalPtr[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m11[90m([94mGlobalPtr[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m12[90m([94mConst[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m13[90m([94mCall[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m14[90m([94mCall[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m15[90m([94mGlobalPtr[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m16[90m([94mConst[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m17[90m([94mCall[90m)[0m has unknown kind or is missing a validator
+[0m[94m          ict.verify [90m> [0m[93mwarn[0m[90m > [0m[1m@main[0m[90m:[92m%start[90m:[93m18[90m([94mRet[90m)[0m has unknown kind or is missing a validator
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0m[92mGenerated IR is good
+[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mRunning pass [94mict.dehumanify[0m
+[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mPass [94mict.dehumanify[0m gave:
+[95m[1m                                  Module [0munnamed
+[90m                                      // decls:
+[95m                                      func_decl [0m[1m@print_number[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_char[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_cstring[0m[90m ([0m[91m%s [0m[96mptr[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@abs[0m[90m ([0m[91m%v [0m[96mi64[0m[93m[0m[90m) [0m[96mi64[0m[93m[0m[90m;[0m
+[95m                                      func_decl [0m[1m@main[0m[90m ([0m[90m) [0m[96mvoid[0m[93m[0m[90m;[0m
+[90m                                      // impls:
+[95m                                      func_impl [0m[1m@abs[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %3 [0mArgPtr[93m[0m [91m%v[0m[90m;
+[0m[94m                                              %4 [0mLoad[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m[90m;
+[0m[94m                                              %5 [0mConst[93m[0m [93m0[0m[90m;
+[0m[94m                                              %6 [0mLt[93m[0m [94m%4[0m [94m%5[0m[90m;
+[0m                                              Bc[93m[0m [94m%6[0m [92m%8[0m [92m%13[0m[90m;
+[0m[92m                                          %8[90m:[0m[93m !if.then[0m[90m // preds = %start [0m
+[94m                                              %9 [0mLoad[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m[90m;
+[0m[94m                                              %10 [0mConst[93m[0m [93m0[0m[90m;
+[0m[94m                                              %11 [0mSub[93m[0m [94m%10[0m [94m%9[0m[90m;
+[0m                                              Ret[93m[0m [94m%11[0m[90m;
+[0m[92m                                          %13[90m:[0m[93m !if.followup[0m[90m // preds = %start [0m
+[94m                                              %14 [0mLoad[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m[90m;
+[0m                                              Ret[93m[0m [94m%14[0m[90m;
+[0m[90m                                      }
+[0m[95m                                      func_impl [0m[1m@main[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %2 [0mGlobalPtr[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %3 [0mGlobalPtr[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %4 [0mConst[93m[0m [93m123[0m[90m;
+[0m[94m                                              %5 [0mConst[93m[0m [93m0[0m[90m;
+[0m[94m                                              %6 [0mSub[93m[0m [94m%5[0m [94m%4[0m[90m;
+[0m[94m                                              %7 [0mCall[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%3[0m [94m%6[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%2[0m [94m%7[0m[90m;
+[0m[94m                                              %9 [0mGlobalPtr[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %10 [0mConst[93m[0m [93m10[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%9[0m [94m%10[0m[90m;
+[0m[94m                                              %12 [0mGlobalPtr[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %13 [0mGlobalPtr[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %14 [0mConst[93m[0m [93m123[0m[90m;
+[0m[94m                                              %15 [0mCall[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%13[0m [94m%14[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%12[0m [94m%15[0m[90m;
+[0m[94m                                              %17 [0mGlobalPtr[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %18 [0mConst[93m[0m [93m10[0m[90m;
+[0m                                              Call[90m[[0m[96mvoid[0m[90m][0m[93m[0m [94m%17[0m [94m%18[0m[90m;
+[0m                                              Ret[93m[0m[90m;
+[0m[90m                                      }
+[0m[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mRunning pass [94mict.ivm.hl2ll[0m
+[0m[92m       ict.ivm.hl2ll [90m> [0m[94minfo[0m[90m > [0mWork is being done
+[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mPass [94mict.ivm.hl2ll[0m gave:
+[95m[1m                                  Module [0munnamed
+[90m                                      // decls:
+[95m                                      func_decl [0m[1m@print_number[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_char[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_cstring[0m[90m ([0m[91m%s [0m[96mptr[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@abs[0m[90m ([0m[91m%v [0m[96mi64[0m[93m[0m[90m) [0m[96mi64[0m[93m[0m[90m;[0m
+[95m                                      func_decl [0m[1m@main[0m[90m ([0m[90m) [0m[96mvoid[0m[93m[0m[90m;[0m
+[90m                                      // impls:
+[95m                                      func_impl [0m[1m@abs[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %3 [0mIVM.R.SPush[93m !noreorder[0m[90m;
+[0m[94m                                              %4 [0mIVM.R.SPush[93m !noreorder !arg.v[0m[90m;
+[0m[94m                                              %5 [0mIVM.R.SFBegin[93m !noreorder[0m[90m;
+[0m[94m                                              %6 [0mIVM.R.GSF[93m[0m[90m;
+[0m[94m                                              %7 [0mIVM.R.Push[93m[0m [93m8[0m[90m;
+[0m[94m                                              %8 [0mIVM.R.Add[93m[0m [94m%6[0m [94m%7[0m[90m;
+[0m[94m                                              %9 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%8[0m[90m;
+[0m[94m                                              %10 [0mIVM.ToStack[93m[0m [94m%9[0m[90m;
+[0m[94m                                              %11 [0mIVM.R.Get64[93m[0m [94m%10[0m[90m;
+[0m[94m                                              %12 [0mIVM.FromStack[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%11[0m[90m;
+[0m[94m                                              %13 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %14 [0mIVM.FromStack[93m[0m [94m%13[0m[90m;
+[0m[94m                                              %15 [0mIVM.ToStack[93m[0m [94m%14[0m[90m;
+[0m[94m                                              %16 [0mIVM.ToStack[93m[0m [94m%12[0m[90m;
+[0m[94m                                              %17 [0mIVM.R.Lt[93m[0m [94m%15[0m [94m%16[0m[90m;
+[0m[94m                                              %18 [0mIVM.FromStack[90m[[0m[96mi8[0m[90m][0m[93m[0m [94m%17[0m[90m;
+[0m[94m                                              %19 [0mIVM.ToStack[93m[0m [94m%18[0m[90m;
+[0m[94m                                              %20 [0mIVM.R.RJnz[93m[0m [92m%22[0m [94m%19[0m[90m;
+[0m[94m                                              %21 [0mIVM.R.RJmp[93m[0m [92m%37[0m[90m;
+[0m[92m                                          %22[90m:[0m[93m !if.then[0m[90m // preds = (none)[0m
+[94m                                              %23 [0mIVM.ToStack[93m[0m [94m%9[0m[90m;
+[0m[94m                                              %24 [0mIVM.R.Get64[93m[0m [94m%23[0m[90m;
+[0m[94m                                              %25 [0mIVM.FromStack[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%24[0m[90m;
+[0m[94m                                              %26 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %27 [0mIVM.FromStack[93m[0m [94m%26[0m[90m;
+[0m[94m                                              %28 [0mIVM.ToStack[93m[0m [94m%27[0m[90m;
+[0m[94m                                              %29 [0mIVM.ToStack[93m[0m [94m%25[0m[90m;
+[0m[94m                                              %30 [0mIVM.R.Sub[93m[0m [94m%28[0m [94m%29[0m[90m;
+[0m[94m                                              %31 [0mIVM.FromStack[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%30[0m[90m;
+[0m[94m                                              %32 [0mIVM.ToStack[93m[0m [94m%31[0m[90m;
+[0m[94m                                              %33 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %34 [0mIVM.R.SAdd[93m !noreorder[0m [93m8[0m[90m;
+[0m[94m                                              %35 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %36 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[92m                                          %37[90m:[0m[93m !if.followup[0m[90m // preds = (none)[0m
+[94m                                              %38 [0mIVM.ToStack[93m[0m [94m%9[0m[90m;
+[0m[94m                                              %39 [0mIVM.R.Get64[93m[0m [94m%38[0m[90m;
+[0m[94m                                              %40 [0mIVM.FromStack[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%39[0m[90m;
+[0m[94m                                              %41 [0mIVM.ToStack[93m[0m [94m%40[0m[90m;
+[0m[94m                                              %42 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %43 [0mIVM.R.SAdd[93m !noreorder[0m [93m8[0m[90m;
+[0m[94m                                              %44 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %45 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[90m                                      }
+[0m[95m                                      func_impl [0m[1m@main[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %2 [0mIVM.R.SPush[93m !noreorder[0m[90m;
+[0m[94m                                              %3 [0mIVM.R.SFBegin[93m !noreorder[0m[90m;
+[0m[94m                                              %4 [0mIVM.R.Push[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %5 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%4[0m[90m;
+[0m[94m                                              %6 [0mIVM.R.Push[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %7 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%6[0m[90m;
+[0m[94m                                              %8 [0mIVM.R.Push[93m[0m [93m123[0m[90m;
+[0m[94m                                              %9 [0mIVM.FromStack[93m[0m [94m%8[0m[90m;
+[0m[94m                                              %10 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %11 [0mIVM.FromStack[93m[0m [94m%10[0m[90m;
+[0m[94m                                              %12 [0mIVM.ToStack[93m[0m [94m%11[0m[90m;
+[0m[94m                                              %13 [0mIVM.ToStack[93m[0m [94m%9[0m[90m;
+[0m[94m                                              %14 [0mIVM.R.Sub[93m[0m [94m%12[0m [94m%13[0m[90m;
+[0m[94m                                              %15 [0mIVM.FromStack[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%14[0m[90m;
+[0m[94m                                              %16 [0mIVM.ToStack[93m[0m [94m%15[0m[90m;
+[0m[94m                                              %17 [0mIVM.ToStack[93m[0m [94m%7[0m[90m;
+[0m[94m                                              %18 [0mIVM.R.Call[93m[0m [94m%16[0m [94m%17[0m[90m;
+[0m[94m                                              %19 [0mIVM.FromStack[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%18[0m[90m;
+[0m[94m                                              %20 [0mIVM.ToStack[93m[0m [94m%19[0m[90m;
+[0m[94m                                              %21 [0mIVM.ToStack[93m[0m [94m%5[0m[90m;
+[0m[94m                                              %22 [0mIVM.R.Call[93m[0m [94m%20[0m [94m%21[0m[90m;
+[0m[94m                                              %23 [0mIVM.R.Push[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %24 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%23[0m[90m;
+[0m[94m                                              %25 [0mIVM.R.Push[93m[0m [93m10[0m[90m;
+[0m[94m                                              %26 [0mIVM.FromStack[93m[0m [94m%25[0m[90m;
+[0m[94m                                              %27 [0mIVM.ToStack[93m[0m [94m%26[0m[90m;
+[0m[94m                                              %28 [0mIVM.ToStack[93m[0m [94m%24[0m[90m;
+[0m[94m                                              %29 [0mIVM.R.Call[93m[0m [94m%27[0m [94m%28[0m[90m;
+[0m[94m                                              %30 [0mIVM.R.Push[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %31 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%30[0m[90m;
+[0m[94m                                              %32 [0mIVM.R.Push[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %33 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%32[0m[90m;
+[0m[94m                                              %34 [0mIVM.R.Push[93m[0m [93m123[0m[90m;
+[0m[94m                                              %35 [0mIVM.FromStack[93m[0m [94m%34[0m[90m;
+[0m[94m                                              %36 [0mIVM.ToStack[93m[0m [94m%35[0m[90m;
+[0m[94m                                              %37 [0mIVM.ToStack[93m[0m [94m%33[0m[90m;
+[0m[94m                                              %38 [0mIVM.R.Call[93m[0m [94m%36[0m [94m%37[0m[90m;
+[0m[94m                                              %39 [0mIVM.FromStack[90m[[0m[96mi64[0m[90m][0m[93m[0m [94m%38[0m[90m;
+[0m[94m                                              %40 [0mIVM.ToStack[93m[0m [94m%39[0m[90m;
+[0m[94m                                              %41 [0mIVM.ToStack[93m[0m [94m%31[0m[90m;
+[0m[94m                                              %42 [0mIVM.R.Call[93m[0m [94m%40[0m [94m%41[0m[90m;
+[0m[94m                                              %43 [0mIVM.R.Push[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %44 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%43[0m[90m;
+[0m[94m                                              %45 [0mIVM.R.Push[93m[0m [93m10[0m[90m;
+[0m[94m                                              %46 [0mIVM.FromStack[93m[0m [94m%45[0m[90m;
+[0m[94m                                              %47 [0mIVM.ToStack[93m[0m [94m%46[0m[90m;
+[0m[94m                                              %48 [0mIVM.ToStack[93m[0m [94m%44[0m[90m;
+[0m[94m                                              %49 [0mIVM.R.Call[93m[0m [94m%47[0m [94m%48[0m[90m;
+[0m[94m                                              %50 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %51 [0mIVM.R.SAdd[93m !noreorder[0m [93m0[0m[90m;
+[0m[94m                                              %52 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %53 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[90m                                      }
+[0m[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mRunning pass [94mict.ivm.reorder[0m
+[0m[96m     ict.ivm.reorder [90m> [0m[94minfo[0m[90m > [0mReorder pass doing its thing...
+[0m[96m     ict.ivm.reorder [90m> [0m[94minfo[0m[90m > [0mFound 22 FromStack, 24 ToStack, 21 single def-use pairs,
+                              collapsed 21 of them ==> 100% decrease in pairs, 87% decrease in slots
+[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mPass [94mict.ivm.reorder[0m gave:
+[95m[1m                                  Module [0munnamed
+[90m                                      // decls:
+[95m                                      func_decl [0m[1m@print_number[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_char[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_cstring[0m[90m ([0m[91m%s [0m[96mptr[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@abs[0m[90m ([0m[91m%v [0m[96mi64[0m[93m[0m[90m) [0m[96mi64[0m[93m[0m[90m;[0m
+[95m                                      func_decl [0m[1m@main[0m[90m ([0m[90m) [0m[96mvoid[0m[93m[0m[90m;[0m
+[90m                                      // impls:
+[95m                                      func_impl [0m[1m@abs[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %3 [0mIVM.R.SPush[93m !noreorder[0m[90m;
+[0m[94m                                              %4 [0mIVM.R.SPush[93m !noreorder !arg.v[0m[90m;
+[0m[94m                                              %5 [0mIVM.R.SFBegin[93m !noreorder[0m[90m;
+[0m[94m                                              %6 [0mIVM.R.GSF[93m[0m[90m;
+[0m[94m                                              %7 [0mIVM.R.Push[93m[0m [93m8[0m[90m;
+[0m[94m                                              %8 [0mIVM.R.Add[93m[0m [94m%6[0m [94m%7[0m[90m;
+[0m[94m                                              %9 [0mIVM.FromStack[90m[[0m[96mptr[0m[90m][0m[93m[0m [94m%8[0m[90m;
+[0m[94m                                              %10 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %11 [0mIVM.ToStack[93m[0m [94m%9[0m[90m;
+[0m[94m                                              %12 [0mIVM.R.Get64[93m[0m [94m%11[0m[90m;
+[0m[94m                                              %13 [0mIVM.R.Lt[93m[0m [94m%10[0m [94m%12[0m[90m;
+[0m[94m                                              %14 [0mIVM.R.RJnz[93m[0m [92m%16[0m [94m%13[0m[90m;
+[0m[94m                                              %15 [0mIVM.R.RJmp[93m[0m [92m%25[0m[90m;
+[0m[92m                                          %16[90m:[0m[93m !if.then[0m[90m // preds = (none)[0m
+[94m                                              %17 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %18 [0mIVM.ToStack[93m[0m [94m%9[0m[90m;
+[0m[94m                                              %19 [0mIVM.R.Get64[93m[0m [94m%18[0m[90m;
+[0m[94m                                              %20 [0mIVM.R.Sub[93m[0m [94m%17[0m [94m%19[0m[90m;
+[0m[94m                                              %21 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %22 [0mIVM.R.SAdd[93m !noreorder[0m [93m8[0m[90m;
+[0m[94m                                              %23 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %24 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[92m                                          %25[90m:[0m[93m !if.followup[0m[90m // preds = (none)[0m
+[94m                                              %26 [0mIVM.ToStack[93m[0m [94m%9[0m[90m;
+[0m[94m                                              %27 [0mIVM.R.Get64[93m[0m [94m%26[0m[90m;
+[0m[94m                                              %28 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %29 [0mIVM.R.SAdd[93m !noreorder[0m [93m8[0m[90m;
+[0m[94m                                              %30 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %31 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[90m                                      }
+[0m[95m                                      func_impl [0m[1m@main[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %2 [0mIVM.R.SPush[93m !noreorder[0m[90m;
+[0m[94m                                              %3 [0mIVM.R.SFBegin[93m !noreorder[0m[90m;
+[0m[94m                                              %4 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %5 [0mIVM.R.Push[93m[0m [93m123[0m[90m;
+[0m[94m                                              %6 [0mIVM.R.Sub[93m[0m [94m%4[0m [94m%5[0m[90m;
+[0m[94m                                              %7 [0mIVM.R.Push[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %8 [0mIVM.R.Call[93m[0m [94m%6[0m [94m%7[0m[90m;
+[0m[94m                                              %9 [0mIVM.R.Push[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %10 [0mIVM.R.Call[93m[0m [94m%8[0m [94m%9[0m[90m;
+[0m[94m                                              %11 [0mIVM.R.Push[93m[0m [93m10[0m[90m;
+[0m[94m                                              %12 [0mIVM.R.Push[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %13 [0mIVM.R.Call[93m[0m [94m%11[0m [94m%12[0m[90m;
+[0m[94m                                              %14 [0mIVM.R.Push[93m[0m [93m123[0m[90m;
+[0m[94m                                              %15 [0mIVM.R.Push[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %16 [0mIVM.R.Call[93m[0m [94m%14[0m [94m%15[0m[90m;
+[0m[94m                                              %17 [0mIVM.R.Push[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %18 [0mIVM.R.Call[93m[0m [94m%16[0m [94m%17[0m[90m;
+[0m[94m                                              %19 [0mIVM.R.Push[93m[0m [93m10[0m[90m;
+[0m[94m                                              %20 [0mIVM.R.Push[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %21 [0mIVM.R.Call[93m[0m [94m%19[0m [94m%20[0m[90m;
+[0m[94m                                              %22 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %23 [0mIVM.R.SAdd[93m !noreorder[0m [93m0[0m[90m;
+[0m[94m                                              %24 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %25 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[90m                                      }
+[0m[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mRunning pass [94mict.ivm.basic-stackplan[0m
+[0m[96mict.ivm.bs-stackplan [90m> [0m[94minfo[0m[90m > [0mStack planner running...
+[0m[96mict.ivm.bs-stackplan [90m> [0m[92mverb[0m[90m > [0mLayouting function [1m@abs[0m
+[0m[96mict.ivm.bs-stackplan [90m> [0m[92mverb[0m[90m > [0m    Var [92m%9[0m @ 0x560968d01960 -> slot [92m-8[0m
+[0m[96mict.ivm.bs-stackplan [90m> [0m[92mverb[0m[90m > [0m    Using [92m8[0m bytes for stack slots
+[0m[96mict.ivm.bs-stackplan [90m> [0m[92mverb[0m[90m > [0mLayouting function [1m@main[0m
+[0m[96mict.ivm.bs-stackplan [90m> [0m[92mverb[0m[90m > [0m    Using [92m0[0m bytes for stack slots
+[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mPass [94mict.ivm.basic-stackplan[0m gave:
+[95m[1m                                  Module [0munnamed
+[90m                                      // decls:
+[95m                                      func_decl [0m[1m@print_number[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_char[0m[90m ([0m[91m%n [0m[96mi64[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@print_cstring[0m[90m ([0m[91m%s [0m[96mptr[0m[93m[0m[90m) [0m[96mvoid[0m[93m[0m[90m; // decl-only[0m
+[95m                                      func_decl [0m[1m@abs[0m[90m ([0m[91m%v [0m[96mi64[0m[93m[0m[90m) [0m[96mi64[0m[93m[0m[90m;[0m
+[95m                                      func_decl [0m[1m@main[0m[90m ([0m[90m) [0m[96mvoid[0m[93m[0m[90m;[0m
+[90m                                      // impls:
+[95m                                      func_impl [0m[1m@abs[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %3 [0mIVM.R.SPush[93m !noreorder[0m[90m;
+[0m[94m                                              %4 [0mIVM.R.SPush[93m !noreorder !arg.v[0m[90m;
+[0m[94m                                              %5 [0mIVM.R.SFBegin[93m !noreorder[0m[90m;
+[0m[94m                                              %6 [0mIVM.R.SAdd[93m[0m [93m-8[0m[90m;
+[0m[94m                                              %7 [0mIVM.R.GSF[93m[0m[90m;
+[0m[94m                                              %8 [0mIVM.R.Push[93m[0m [93m8[0m[90m;
+[0m[94m                                              %9 [0mIVM.R.Add[93m[0m [94m%7[0m [94m%8[0m[90m;
+[0m[94m                                              %10 [0mIVM.R.SFStore64[93m[0m [93m-8[0m[90m;
+[0m[94m                                              %11 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %12 [0mIVM.R.SFLoad64[93m[0m [93m-8[0m[90m;
+[0m[94m                                              %13 [0mIVM.R.Get64[93m[0m [94m%12[0m[90m;
+[0m[94m                                              %14 [0mIVM.R.Lt[93m[0m [94m%11[0m [94m%13[0m[90m;
+[0m[94m                                              %15 [0mIVM.R.RJnz[93m[0m [92m%17[0m [94m%14[0m[90m;
+[0m[94m                                              %16 [0mIVM.R.RJmp[93m[0m [92m%26[0m[90m;
+[0m[92m                                          %17[90m:[0m[93m !if.then[0m[90m // preds = (none)[0m
+[94m                                              %18 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %19 [0mIVM.R.SFLoad64[93m[0m [93m-8[0m[90m;
+[0m[94m                                              %20 [0mIVM.R.Get64[93m[0m [94m%19[0m[90m;
+[0m[94m                                              %21 [0mIVM.R.Sub[93m[0m [94m%18[0m [94m%20[0m[90m;
+[0m[94m                                              %22 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %23 [0mIVM.R.SAdd[93m !noreorder[0m [93m8[0m[90m;
+[0m[94m                                              %24 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %25 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[92m                                          %26[90m:[0m[93m !if.followup[0m[90m // preds = (none)[0m
+[94m                                              %27 [0mIVM.R.SFLoad64[93m[0m [93m-8[0m[90m;
+[0m[94m                                              %28 [0mIVM.R.Get64[93m[0m [94m%27[0m[90m;
+[0m[94m                                              %29 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %30 [0mIVM.R.SAdd[93m !noreorder[0m [93m8[0m[90m;
+[0m[94m                                              %31 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %32 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[90m                                      }
+[0m[95m                                      func_impl [0m[1m@main[0m[93m[0m[90m {
+[0m[92m                                          %start[90m:[0m[93m[0m[90m // preds = (none)[0m
+[94m                                              %2 [0mIVM.R.SPush[93m !noreorder[0m[90m;
+[0m[94m                                              %3 [0mIVM.R.SFBegin[93m !noreorder[0m[90m;
+[0m[94m                                              %4 [0mIVM.R.SAdd[93m[0m [93m0[0m[90m;
+[0m[94m                                              %5 [0mIVM.R.Push[93m[0m [93m0[0m[90m;
+[0m[94m                                              %6 [0mIVM.R.Push[93m[0m [93m123[0m[90m;
+[0m[94m                                              %7 [0mIVM.R.Sub[93m[0m [94m%5[0m [94m%6[0m[90m;
+[0m[94m                                              %8 [0mIVM.R.Push[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %9 [0mIVM.R.Call[93m[0m [94m%7[0m [94m%8[0m[90m;
+[0m[94m                                              %10 [0mIVM.R.Push[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %11 [0mIVM.R.Call[93m[0m [94m%9[0m [94m%10[0m[90m;
+[0m[94m                                              %12 [0mIVM.R.Push[93m[0m [93m10[0m[90m;
+[0m[94m                                              %13 [0mIVM.R.Push[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %14 [0mIVM.R.Call[93m[0m [94m%12[0m [94m%13[0m[90m;
+[0m[94m                                              %15 [0mIVM.R.Push[93m[0m [93m123[0m[90m;
+[0m[94m                                              %16 [0mIVM.R.Push[93m[0m [1m@abs[0m[90m;
+[0m[94m                                              %17 [0mIVM.R.Call[93m[0m [94m%15[0m [94m%16[0m[90m;
+[0m[94m                                              %18 [0mIVM.R.Push[93m[0m [1m@print_number[0m[90m;
+[0m[94m                                              %19 [0mIVM.R.Call[93m[0m [94m%17[0m [94m%18[0m[90m;
+[0m[94m                                              %20 [0mIVM.R.Push[93m[0m [93m10[0m[90m;
+[0m[94m                                              %21 [0mIVM.R.Push[93m[0m [1m@print_char[0m[90m;
+[0m[94m                                              %22 [0mIVM.R.Call[93m[0m [94m%20[0m [94m%21[0m[90m;
+[0m[94m                                              %23 [0mIVM.R.SFEnd[93m !noreorder[0m[90m;
+[0m[94m                                              %24 [0mIVM.R.SAdd[93m !noreorder[0m [93m0[0m[90m;
+[0m[94m                                              %25 [0mIVM.R.SPop[93m !noreorder[0m[90m;
+[0m[94m                                              %26 [0mIVM.R.Ret[93m !noreorder[0m[90m;
+[0m[90m                                      }
+[0m[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mRunning backend [94mict.ivm.backend[0m for arch [94mivm[0m
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mAssembled into:
+                                  [90m///
+                                  /// [0m[95mfunc_decl [0m[1m@abs[0m[90m ([0m[91m%v [0m[96mi64[0m[93m[0m[90m) [0m[96mi64[0m[93m[0m[90m;[0m
+                                  [90m///
+                                  [0m.func
+                                  abs:
+                                      _abs.0x560968d03d50:
+                                          spush
+                                          spush
+                                          sfbegin
+                                          sadd -8
+                                          gsf
+                                          push 8
+                                          add
+                                          sfstore64 -8
+                                          push 0
+                                          sfload64 -8
+                                          get64
+                                          lt
+                                          rjnz _abs.0x560968cfda50
+                                          rjmp _abs.0x560968cfdb00
+                                      _abs.0x560968cfda50:
+                                          push 0
+                                          sfload64 -8
+                                          get64
+                                          sub
+                                          sfend
+                                          sadd 8
+                                          spop
+                                          ret
+                                      _abs.0x560968cfdb00:
+                                          sfload64 -8
+                                          get64
+                                          sfend
+                                          sadd 8
+                                          spop
+                                          ret
+                                  
+                                  [90m///
+                                  /// [0m[95mfunc_decl [0m[1m@main[0m[90m ([0m[90m) [0m[96mvoid[0m[93m[0m[90m;[0m
+                                  [90m///
+                                  [0m.func
+                                  main:
+                                      _main.0x560968cfe6d0:
+                                          spush
+                                          sfbegin
+                                          sadd 0
+                                          push 0
+                                          push 123
+                                          sub
+                                          push abs
+                                          call
+                                          push print_number
+                                          call
+                                          push 10
+                                          push print_char
+                                          call
+                                          push 123
+                                          push abs
+                                          call
+                                          push print_number
+                                          call
+                                          push 10
+                                          push print_char
+                                          call
+                                          sfend
+                                          sadd 0
+                                          spop
+                                          ret
+                                  
+                                  .const _ict_bss_end 4096
+[0m[91m            ict.core [90m> [0m[94minfo[0m[90m > [0mRunning backend [94mict.ivm.backend[0m for arch [94mivm[0m
+[0m[91m            ict.main [90m> [0m[94minfo[0m[90m > [0mDone
+[0m

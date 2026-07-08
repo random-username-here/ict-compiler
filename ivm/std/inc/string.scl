@@ -13,3 +13,8 @@ func memcpy(dest *int8, src *const int8, count int64)
 {
     while (count--) *(dest++) = *(src++);
 }
+
+func memset(dest *int8, val int8, count int64)
+{
+    while (count--) *(dest++) = val;
+}

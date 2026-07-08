@@ -1,0 +1,81 @@
+include "misc.scl";
+
+var WALL_REPULSION  const int64 = 1000;
+var WALL_FALLOFF    const int64 = 200;
+var ROOT_REPULSION  const int64 = 1000;
+var ROOT_FALLOFF    const int64 = 400;
+var ENEMY_REPULSION  const int64 = 1000;
+var ENEMY_FALLOFF    const int64 = 20;
+
+var map_buf *int8;
+var heatmap *int64;
+var map_w int64, map_h int64;
+var pos_x int64, pos_y int64;
+
+func map_cell(x int64, y int64) *int8 = map_buf + x + y * map_w;
+func heatmap_cell(x int64, y int64) *int64 = heatmap + x + y * map_w;
+
+func heatmap_delta(x int64, y int64, power int64, falloff int64, sign int64) {
+    var spread = sqrt_up((power + falloff - 1) / falloff);
+    var dx = -spread;
+    while (dx <= spread) {
+        var dy = -spread;
+        while (dy <= spread) {
+            var p = power - (dx * dx + dy * dy) * falloff;
+            var px = x + dx, py = y + dy;
+            if (px >= 0 && py >= 0 && px < map_w && py < map_h && p > 0) {
+                *heatmap_cell(px, py) += sign * p;
+            }
+            ++dy;
+        }
+        ++dx;
+    }
+}
+
+func map_cell_delta(x int64, y int64, ch int8, delta int64) {
+    if (ch == '#')
+        heatmap_delta(x, y, WALL_REPULSION, WALL_FALLOFF, delta);
+    else if (ch == '%')
+        heatmap_delta(x, y, ROOT_REPULSION, ROOT_FALLOFF, delta);
+}
+
+func map_set_cell(x int64, y int64, ch int8) {
+    map_cell_delta(x, y, *map_cell(x, y), -1);
+    *map_cell(x, y) = ch;
+    map_cell_delta(x, y, ch, 1);
+}
+
+func map_set_wall(x int64, y int64) { map_set_cell(x, y, '#'); }
+func map_set_floor(x int64, y int64) { map_set_cell(x, y, '.'); }
+func map_set_root(x int64, y int64) { map_set_cell(x, y, '%'); }
+func map_walkable(x int64, y int64) bool {
+    return x >= 0 && y >= 0 && x < map_w && y < map_h && *map_cell(x, y) == '.';
+}
+
+func map_clear_visible() {
+    var dx = -4;
+    while (dx <= 4) {
+        var dy = -4;
+        while (dy <= 4) {
+            if (dx * dx + dy * dy <= 26) {
+                var px = pos_x + dx, py = pos_y + dy;
+                if (px >= 0 && py >= 0 && px < map_w && py < map_h) {
+                    if (*map_cell(px, py) == '?')
+                        map_set_floor(px, py);
+                }
+            }
+            ++dy;
+        }
+        ++dx;
+    }
+}
+
+func map_init(w int64, h int64) {
+    map_buf = st_alloc(w * h);
+    heatmap = st_alloc(w * h * 8);
+    map_w = w;
+    map_h = h;
+    memset(map_buf, '?', w * h);
+    memset(heatmap, 0, w * h);
+}
+

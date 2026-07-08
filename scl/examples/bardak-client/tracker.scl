@@ -1,0 +1,63 @@
+///
+/// Enemy tracker
+///
+include "mapper.scl";
+include "char64.scl";
+include "misc.scl";
+
+var TR_COUNT const int64 = 16;
+var tr_array *int8;
+
+type tr_t *void;
+func tr_i(i int64) tr_t = tr_array + 16 * i;
+func tr_type(v tr_t) *char64_t = f_i64p(v, 0);
+func tr_x(v tr_t) *int8 = f_i8p(v, 8);
+func tr_y(v tr_t) *int8 = f_i8p(v, 9);
+func tr_last(v tr_t) *int16 = f_i16p(v, 10);
+func tr_hp(v tr_t) *int16 = f_i16p(v, 12);
+func tr_id(v tr_t) *int16 = f_i16p(v, 14);
+
+func tr_init() {
+    tr_array = st_alloc(16 * TR_COUNT);
+}
+
+func tr_update_hmap(i tr_t, delta int64) {
+    heatmap_delta(*tr_x(i), *tr_y(i), ENEMY_REPULSION, ENEMY_FALLOF, delta);
+}
+
+func tr_add(id int16, kind char64_t, x int8, y int8, hp int16) {
+    var i = 0;
+    while (i < TR_COUNT) {
+        var tr = tr_i(i);
+        if (tr_id(tr) == id) {
+            tr_update_hmap(tr, -1);
+            *tr_last(tr) = cur_tick;
+            *tr_hp(tr) = hp;
+            *tr_x(tr) = x;
+            *tr_y(tr) = y;
+            tr_update_hmap(tr, 1);
+            return;
+        }
+    }
+
+    var last = tr_i(TR_COUNT - 1);
+    if (tr_id(last) != 0)
+        tr_update_hmap(tr, -1);
+
+    var n = (TR_COUNT - 1) * 16;
+    var sp = tr_array + 16 * (TR_COUNT - 1) - 1, dp = tr_array + 16 * TR_COUNT - 1;
+    while (n > 0) {
+        --n;
+        *(dp--) = *(sp--);
+    }
+
+    var first = tr_i(0);
+    *tr_type(first) = id;
+    *tr_x(first) = x;
+    *tr_y(first) = y;
+    *tr_last(first) = cur_tick;
+    *tr_hp(first) = hp;
+    *tr_id(first) = id;
+    tr_update_hmap(first, 1);
+}
+

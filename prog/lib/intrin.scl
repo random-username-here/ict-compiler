@@ -1,9 +1,0 @@
-///
-/// intrin.scl -- Intrinsics
-/// All implemented in intrin.s
-///
-include once;
-
-/// Halt processor, untill next interrupt
-func ivm_hlt() void;
-

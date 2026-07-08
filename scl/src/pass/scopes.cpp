@@ -30,7 +30,8 @@ void resolveScopes(Statement *stmnt, Scope *parent) {
         if (ifelse->otherwise())
             resolveScopes(ifelse->otherwise().get(), parent);
     } else if (auto ret = dynamic_cast<ReturnStatement*>(stmnt)) {
-        resolveScopes(ret->expr().get(), parent);
+        if (ret->expr())
+            resolveScopes(ret->expr().get(), parent);
     } else if (auto whl = dynamic_cast<While*>(stmnt)) {
         resolveScopes(whl->cond().get(), parent);
         resolveScopes(whl->body().get(), parent);
